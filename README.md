@@ -1,4 +1,4 @@
-# ADD_Codex
+# ADD_ATAM_Codex
 This repository is a sample repository for the *architecture designing tutorial* of the 2026 Fall *Graduate Project* class in Konkuk University.
 
 Some of the contents in this repository is inspired by the project in https://github.com/otrebmuh/ADD_AI and the paper *"Better Together: An LLM-assisted approach to designing software architectures using Attribute-Driven Design"* by Humberto Cervantes, Rick Kazman, and Yuanfang Cai.

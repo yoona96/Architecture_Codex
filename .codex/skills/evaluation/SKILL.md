@@ -38,20 +38,26 @@ The output of the utility tree-generation step is a prioritization of specific q
 
 Generate utility tree following the format below.
 
-|Quality Attribute|Refinement|Scenario|Importance|Difficulty|
-|---|---|---|---|---|
-||||||
+|Quality Attribute|Refinement|Scenario|Importance|Difficulty|Sum|
+|---|---|---|---|---|---|
+|||||||
 
 Importance and Difficulty should be in the range of 0 to 100 and in scale of 10.
 Create or modify utility tree table in section 3 of `/HPS/evaluation/result.md` file.
 
 
 ### Step 6: Analyze the Architectural Approaches
-In this step, the evaluation team can probe the architectural approaches that relize the important quality attributes. This is done with an eye to documenting these architectural decisions and identifying their risks, nonrisks, sensitivity points, and tradeoffs.
+In this step, the evaluation team can probe the architectural approaches that relize the important quality attributes. This is done with an eye to documenting these architectural decisions and identifying their risks, non-risks, sensitivity points, and tradeoffs.
+- Sensitivity point: a decision with high leverage over one quality attribute.
+- Tradeoff point: a decision that is a sensitivity point for two or more attributes that move in opposite directions.
+- Risk: a decision (or absence of one) that may cause a quality attribute to go unmet.
+- Non-risk: a sound, well-justified decision that needs no change.
 
 The goal is for the evaluation team to be convinced that the instantiation of the approach in the architecture being evaluated is appropriate for meeting the attribute-specific requirements for which it is intended. Evaluation team should analyze every scenario in this step.
 
 Output of this step should be in a format below.
+
+#### Architectural Approach Analysis
 
 |Scenario||
 |---|---|
@@ -62,9 +68,15 @@ Output of this step should be in a format below.
 |Reasoning||
 |Architecture diagram||
 
-|Architectural Decisions|Risk|Sensitivity|Tradeoff|Nonrisk|
+|Architectural Decisions|Risk|Sensitivity|Tradeoff|Non-risk|
 |---|---|---|---|---|
 ||||||
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|-----------|----------------------|----------------------|
+| [Conflicting Attributes] | [direction + why] | [direction + why] |
 
 Architectural decisions table should be generated per scenario.
 
@@ -106,6 +118,8 @@ Create or modify utility tree prioritization table in section 3 of `/HPS/evaluat
 ### Step 8: Analyze the Architectural Approaches
 In this step, the architect explains how relevant architectural decisions contribute to realizing the scenario. The evaluation team performs the same activities as in Step 6. The evaluation team should also analyze every scenario in this step.
 
+For each high-priority scenario, examine how the identified approaches satisfy (or fail) it, gathering evidence from the structure.
+
 Modify architectural approach analysis table in section 4 of `/HPS/evaluation/result.md` file.
 
 
@@ -116,7 +130,7 @@ The document should include:
 - The set of scenarios and their prioritization
 - The utility tree
 - The risks discovered
-- The nonrisks
+- The non-risks
 - The sensitivity points and tradeoff points
 
 Update the `/HPS/evaluation/result.md` document if necessary.

@@ -1,10 +1,10 @@
-# Architecture Evaluation Result — Hotel Pricing System
+# Architecture Evaluation Result - Hotel Pricing System
 
 ## 1. Introduction
 
-ATAM evaluation started 2026-10-18, resumed 2026-10-19 and finalized 2026-10-20, Asia/Seoul. Steps 1-9 cover both phases, five independent simulated stakeholder roles, all nine initial and ten additional scenarios. This report evaluates the unchanged 2026-10-18 ADD baseline. [Preparation](preparation.md) records Steps 1-3, the complete baseline hashes, method, participation and scoring rules. [Participation](participation.md) preserves actual agent exchanges and ballots. All findings are document-based; no load, fault, security, integration or implementation test was executed.
+Fresh ATAM rerun started 2026-10-23 and resumed 2026-10-24, Asia/Seoul, and finalized on 2026-10-24 using the revised evaluation skill/template. This report completes Steps 1-9 with fresh stakeholder review and ballots, all 19 scenarios analyzed and per-scenario Trade-Off Maps. [Preparation](preparation.md) records method and baseline hashes. [Historical evaluation](history/2026-10-20/result.md) is retained separately; its votes are not current evidence. No ADD files or requirements are changed. No implementation, load, failover, security or integration test was run.
 
-Business objective: replace a legacy pricing system for approximately 300 hotels, avoid revenue loss, publish correct prices promptly, reliably deliver to CMS, and isolate failures and change. HPS-2/3/4 and QA-1..5 are primary. HPS-1..6, QA-1..9, CON-1..6 and CRN-1..5 remain in scope. Two-month MVP and six-month release are constraints, not validated commitments. The five simulated stakeholders are revenue/pricing, CMS integration, SRE operations, security/identity and engineering/QA delivery. Their votes are distinct from actual customer approval.
+Replace legacy pricing for approximately 300 hotels, reduce revenue loss and support timely complete prices and reliable CMS delivery. HPS-2/3/4 and QA-1..5 are primary drivers. All 26 drivers remain in scope; two-month MVP and six-month delivery are constraints. Five simulated stakeholder roles are revenue/pricing, CMS integration, SRE operations, security/identity and engineering/QA. These are agents, not actual business approvals.
 
 ## 2. Architecture Presentation
 
@@ -23,91 +23,97 @@ Business objective: replace a legacy pricing system for approximately 300 hotels
 | AP9 Ports and adapters | D9; 6/7.6 | Protocol-neutral core and replaceable identity/CMS adapters; real disposable database in isolated tests |
 | AP10 Promotion and replacement | D10/D12; 7.7/7.8 | Same artifact digests, runtime configuration, compatible migrations; reconciled legacy import and single authority switch |
 
-This inventory captures approaches before scenario-specific analysis. Detailed diagrams remain in [architecture](../design/architecture.md); the following evaluation diagram identifies shared contention and external contract boundaries.
+The following is the **exact ADD section 5 container diagram**, reproduced without altered arrows or an invented evaluation topology. Arrows retain their original ADD interaction/dependency meaning; the diagram is not a fault tree or timing model. Per-scenario analysis links the corresponding unchanged ADD sequence.
 
 ```mermaid
-flowchart LR
-    Caller[Browser and API consumers] --> API[Java API replicas]
+flowchart TB
+    Browser[Angular browser UI] --> Edge[HTTPS ingress]
+    Consumers[REST consumers] --> Edge
+    Edge --> API[Java application replicas across two zones]
+    API --> DB[Managed relational primary with synchronous standby]
+    Worker[Java background worker] --> DB
+    Worker --> CMS[CMS REST endpoint]
     API --> Identity[Cloud identity]
-    API --> DB[Authoritative relational primary]
-    Worker[Bounded workers] --> DB
-    DB --> Standby[Synchronous standby]
-    Worker --> CMS[CMS receiver contract]
-    Worker --> Export[Measurement export]
-    API --> Export
+    API --> Telemetry[Monitoring and audit export]
+    Worker --> Telemetry
+    Config[Secrets and runtime configuration] --> API
+    Config --> Worker
 ```
 
 ## 3. Quality Attribute Utility Tree
 
 ### Step 5: Initial utility tree
 
-The utility root is business-safe, timely, available pricing. Attribute/refinement/scenario columns are its branches and leaves. The evaluator assigns provisional numeric scores using preparation's anchors and original High/Medium priorities. Importance is business consequence; difficulty is unresolved realization effort/uncertainty. These are ordinal judgements, not measured probabilities. All nine leaves are analyzed regardless of rank.
-
-| Quality Attribute | Refinement | Scenario | Importance | Difficulty |
-|---|---|---|---:|---:|
-| Performance | Local complete publication | QA-1: one hotel/date base-rate edit makes all rates/rooms queryable in <100 ms at normal load | 100 | 90 |
-| Reliability | Accepted change and CMS receipt | QA-2: all price changes publish and are received by CMS | 100 | 100 |
-| Availability | Query continuity | QA-3: 99.9% uptime outside maintenance | 100 | 80 |
-| Scalability | Tenfold read workload | QA-4: 100k to 1m queries/day, mean latency increase <=20% | 90 | 80 |
-| Security | Authorized identity and functions | QA-5: provider validates login and only authorized operations/hotels are accessible | 100 | 60 |
-| Modifiability | Additional transport | QA-6: non-REST query endpoint without core changes | 60 | 50 |
-| Deployability | Environment portability | QA-7: promote nonproduction environments without code changes | 60 | 50 |
-| Monitorability | Complete publication accounting | QA-8: collect 100% of publication performance/reliability measures | 70 | 90 |
-| Testability | Independence from external business systems | QA-9: 100% of elements support independent integration testing | 70 | 60 |
-
-QA-8 difficulty is raised above its original Medium because crash-window exact timing and ingress completeness remain unresolved. QA-2 has the highest difficulty because sender tactics cannot establish receiver guarantees. QA-1 includes hotel-lock waits, so its 90 ms allocation is not a demonstrated bound.
-
-### Step 7: Stakeholder brainstorming and public vote
-
-Five roles independently proposed two scenarios each and reviewed the shared Phase 1 findings and [candidate pool](scenario-pool.md). All agreed that the ten concerns were distinct: related cutover scenarios S-04/S-10 test different authority and deployment behaviors. Use-case, growth and exploratory scenarios are represented. [Participation](participation.md) records cross-role challenges, consolidation acceptance and public ballots. Each role cast five distinct votes; total 25. Neither evaluator nor designer voted.
-
-| ID | Scenario | Quality Attributes | Votes |
-|---|---|---|---:|
-| S-02 | Recover irreparable policy activation at portfolio scale | Reliability, availability, monitorability, correctness | 4 |
-| S-03 | Recover lost CMS receipts with duplicate and late requests | Reliability, monitorability | 4 |
-| S-04 | Fence delayed legacy requests during cutover and rollback | Reliability, availability, monitorability | 4 |
-| S-05 | Sustain query growth with concentrated hotel mutations | Performance, scalability, availability, monitorability | 3 |
-| S-06 | Recover DB failure during telemetry/storage pressure | Reliability, availability, monitorability | 2 |
-| S-07 | Enforce revoked scope across cursors and replays | Security, monitorability | 2 |
-| S-08 | Handle identity key rotation during provider outage | Security, availability, monitorability, testability | 2 |
-| S-09 | Extend protocol with trustworthy independent tests | Modifiability, security, testability | 2 |
-| S-01 | Confirm changed policy and replay lost response | Performance, reliability, correctness | 1 |
-| S-10 | Deliver and roll back after accepted writes | Deployability, reliability, testability, buildability | 1 |
-
-Rank uses votes descending then numeric ID ascending. **S-02, S-03, S-04, S-05 and S-06** become new leaves. S-06 wins the four-way two-vote tie by ID; no greater severity is inferred. All ten are analyzed in Step 8. Votes do not remove original requirements or accept risks.
-
-### Final utility tree and Importance/Difficulty prioritization
-
-The tree contains exactly 14 leaves: nine original plus five selected new scenarios. Sum = Importance + Difficulty; table ordered by Sum descending then original/new numeric ID. This analytical score order does not override ballot selection. QA-8 Importance changes 70 to 80 after SH1's reconciliation concern supported by SH3/SH4/SH5; SH2's qualification is retained: CMS receipt evidence remains a QA-2 obligation. QA-5 Difficulty changes 60 to 70 after SH4 identifies key/session/in-flight uncertainties. Initial scores above remain as history. New scores are evaluator judgements using the same anchors: S-02/03/04 carry unresolved critical policy/receiver authority boundaries; S-05/06 combine demanding shared-resource and failure conditions. They are not measured effort or stakeholder vote counts.
+Scores are fresh evaluator judgements using preparation anchors, not carried-over votes. Importance and Difficulty are 0..100 by tens; Sum is arithmetic addition. Original High/Medium priorities remain context. Every leaf is analyzed regardless of score. QA-8 difficulty reflects exact-timing gaps; QA-5 difficulty reflects key/session/revocation uncertainty. These judgements were reviewed by all five current stakeholder roles without requested score changes.
 
 | Quality Attribute | Refinement | Scenario | Importance | Difficulty | Sum |
 |---|---|---|---:|---:|---:|
-| Reliability | Complete local/external publication | QA-2 | 100 | 100 | 200 |
-| Reliability / correctness | Exceptional activation recovery | S-02 | 100 | 100 | 200 |
-| Reliability | Durable CMS receipt under ambiguity | S-03 | 100 | 100 | 200 |
-| Reliability / availability | Cross-generation price authority | S-04 | 100 | 100 | 200 |
+| Performance | Complete publication <100 ms | QA-1 | 100 | 90 | 190 |
+| Reliability | 100% accepted changes and CMS receipt | QA-2 | 100 | 100 | 200 |
+| Availability | 99.9% query uptime outside maintenance | QA-3 | 100 | 80 | 180 |
+| Scalability | 100k to 1m/day mean latency increase <=20% | QA-4 | 90 | 80 | 170 |
+| Security | Validated identity and authorized functions | QA-5 | 100 | 70 | 170 |
+| Modifiability | New protocol without core changes | QA-6 | 60 | 50 | 110 |
+| Deployability | Environment movement without code changes | QA-7 | 60 | 50 | 110 |
+| Monitorability | 100% publication performance/reliability measures | QA-8 | 80 | 90 | 170 |
+| Testability | All elements independently integration-testable | QA-9 | 70 | 60 | 130 |
+
+### Step 7: Fresh stakeholder pool and vote
+
+The five role agents freshly reviewed the ten-candidate pool on 2026-10-23 and cast new public ballots on 2026-10-24. Each cast five distinct votes, total 25. They accepted the consolidation (ten distinct concerns), primary-attribute mappings and current initial scores without correction. [Participation](participation.md) records current ballots, reasons and cross-role exchanges. Prior ballots are not treated as fresh evidence. Rank is votes descending then numeric ID ascending; Importance/Difficulty sums do not determine selection.
+
+| ID | Scenario | Quality Attributes | Votes |
+|---|---|---|---:|
+| S-02 | Irreparable policy activation recovery | Reliability | 4 |
+| S-03 | Lost CMS receipt and late delivery | Reliability | 4 |
+| S-04 | Legacy authority fencing | Reliability | 4 |
+| S-05 | Query growth with hot-hotel mutations | Scalability | 4 |
+| S-06 | DB failure under retention pressure | Availability | 3 |
+| S-08 | Known-key rotation during IdP outage | Security | 2 |
+| S-09 | Alternative query protocol and independent tests | Modifiability | 2 |
+| S-07 | Revocation across cursors/replays | Security | 1 |
+| S-10 | Release and rollback after accepted writes | Deployability | 1 |
+| S-01 | Stale preview and durable replay | Reliability | 0 |
+
+The selected new leaves are **S-02, S-03, S-04, S-05 and S-06**. S-02..05 tie at four votes and are ordered numerically; S-06 receives three. All ten scenarios are analyzed, including zero-vote S-01. Selection is unchanged from the archive, but current counts and reasons are independently collected; this is not evidence of risk closure. The table's Quality Attributes column deliberately names only the primary branch; related effects are documented separately in each analysis.
+
+### Final utility tree and score prioritization
+
+Exactly 14 leaves comprise nine original scenarios and the five vote winners. Primary attributes below exactly match the corresponding analysis. Scores use the same anchors and are evaluator judgements, not measured probabilities or person-days. Initial scores remain unchanged after current role review. New S-02/03/04 score 100/100 because critical reliability depends on unresolved exceptional-policy/receiver/authority contracts; S-05 scores 90/90 for skewed shared-primary capacity; S-06 scores 100/90 for service-dependent recovery under retention pressure. Sum is Importance + Difficulty, shown in descending score order with numeric IDs breaking ties within original/new groups; this does not override vote ranking.
+
+| Quality Attribute | Refinement | Scenario | Importance | Difficulty | Sum |
+|---|---|---|---:|---:|---:|
+| Reliability | Complete publication and CMS receipt | QA-2 | 100 | 100 | 200 |
+| Reliability | Exceptional activation recovery | S-02 | 100 | 100 | 200 |
+| Reliability | Durable receipt under ambiguity | S-03 | 100 | 100 | 200 |
+| Reliability | Cross-generation producer authority | S-04 | 100 | 100 | 200 |
 | Performance | Complete publication latency | QA-1 | 100 | 90 | 190 |
-| Availability / reliability | Failover with retention pressure | S-06 | 100 | 90 | 190 |
+| Availability | DB recovery with retention pressure | S-06 | 100 | 90 | 190 |
 | Availability | Query continuity | QA-3 | 100 | 80 | 180 |
-| Scalability / performance | Hot-hotel and mixed workload | S-05 | 90 | 90 | 180 |
+| Scalability | Hot-hotel mixed workload | S-05 | 90 | 90 | 180 |
 | Scalability | Tenfold read volume | QA-4 | 90 | 80 | 170 |
-| Security | Current scopes and identity trust | QA-5 | 100 | 70 | 170 |
-| Monitorability | Complete publication measurements | QA-8 | 80 | 90 | 170 |
-| Testability | External-system-independent harness | QA-9 | 70 | 60 | 130 |
+| Security | Valid identity and current scopes | QA-5 | 100 | 70 | 170 |
+| Monitorability | Complete publication measures | QA-8 | 80 | 90 | 170 |
+| Testability | Independent element integration tests | QA-9 | 70 | 60 | 130 |
 | Modifiability | Additional query transport | QA-6 | 60 | 50 | 110 |
-| Deployability | Runtime environment configuration | QA-7 | 60 | 50 | 110 |
+| Deployability | No-code-change environment movement | QA-7 | 60 | 50 | 110 |
+
 
 ## 4. Architectural Approaches Analysis
 
-### Step 6: Every initial scenario
+### Step 6: Initial scenarios
 
-Evidence references refer to the frozen architecture and validation plan. R, S, T and N identifiers are defined in section 5. Nonrisk is conditional design adequacy for its narrow mechanism; none is a passed implementation test. Each scenario includes its stimulus, expected response, response measure, reasoning, evidence gap and architectural diagram reference.
+Classification uses the revised skill. Each Primary Attribute is identical to the utility tree. Related effects retain existing QA names/IDs; functional invariants are not silently promoted to quality attributes. R/S/T/N IDs are defined in section 5. Structural evidence is causal design reasoning, not measurement.
 
 ### QA-1 — Local publication latency
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-1 |
 |---|---|
-| Attribute(s) | Performance, consistency |
+| Primary Attribute | Performance |
+| Related quality effects | Reliability QA-2; Monitorability QA-8 |
+| Functional invariants | Complete hotel/date PriceSet; approved monetary rules |
 | Environment | Normal mixed workload; maximum supported room/rate dimensions and normal load undefined, A1 |
 | Stimulus | Authorized user changes one hotel's base rate for one date |
 | Response | Recalculate all dependent rates/rooms and atomically expose complete PriceSets |
@@ -116,15 +122,26 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.3; validation QA-1 experiment not run. A1/A6 pending; reject-based apparent speedup is not success |
 | Architecture diagram | Architecture 7.3 simulation/publication sequence and section 6 application diagram |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D3/D4/D13: local transaction with hotel serialization | R1: lock wait/dimension/load uncertainty can exceed 100 ms | S1: lock hold/queue time, calculator graph and commit latency | T1: simple strong ordering versus parallel mutation throughput | N1: CMS is outside query-ready commit path |
+| D3/D4/D8/D13 | R1: load/dimension/lock timing; R4: selected durability guarantee | S1/S2 | T1/T2 | N1: retain atomic local price/task/receipt commit |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T1: Synchronous replication: Reliability QA-2 vs Performance QA-1 | A - D8 synchronous standby: Reliability increases because commit acknowledgement waits for a durable replica under the selected service contract; Performance decreases because the extra replication acknowledgement is on the commit path | B - asynchronous replication: Performance can improve by removing remote acknowledgement wait; Reliability decreases because acknowledged records can be absent at failover. Rejected as a silent durability relaxation; actual service guarantees remain A4 |
+| T2: Unsampled durable ledger: Monitorability QA-8 vs Performance QA-1 | A - D7 retain unsampled accepted-publication evidence with D4 commit: Monitorability increases because each accepted publication has durable identity/outcome evidence; Performance decreases through added transaction writes/logging on the publication path | B - sampled or asynchronous volatile-only evidence: Performance can improve by removing hot-path writes; Monitorability decreases because unsampled/crash-window records can be missing. Not a compliant replacement for QA-8 |
 
 ### QA-2 — Complete publication and CMS receipt
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-2 |
 |---|---|
-| Attribute(s) | Reliability, integrity |
+| Primary Attribute | Reliability |
+| Related quality effects | Performance QA-1; Monitorability QA-8 |
+| Functional invariants | No duplicate logical CMS effect or stale overwrite |
 | Environment | Multiple edits, crashes, lost acknowledgements and recoverable CMS outage |
 | Stimulus | User performs successive hotel price changes |
 | Response | Every accepted change remains queryable and receives a durable CMS receipt without duplicate logical application or stale overwrite |
@@ -133,15 +150,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.3/7.4/7.8; A2/A3/A10/A13 unresolved; no CMS contract or fault results |
 | Architecture diagram | Architecture 7.4 delivery and 7.8 cutover sequences |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D4/D6/D12: outbox, receipt and single-writer migration | R2: receiver capabilities unconfirmed; R3: backlog/retention limits; R10: cutover reconciliation unspecified | S2: receiver ordering/dedup horizon; S3: drain rate/storage; S8: cutover watermarks | T2: ordered no-discard delivery versus head-of-line blocking and storage cost | N2: atomic task creation prevents accepted local prices without delivery obligation |
+| D4/D6/D8/D12 | R2/R3/R10: receiver, replay retention and authority transition | S2/S3 | T1 | N1: retain local atomic outbox; external guarantees remain open |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T1: Synchronous replication: Reliability QA-2 vs Performance QA-1 | A - D8 synchronous standby: Reliability increases because commit acknowledgement waits for a durable replica under the selected service contract; Performance decreases because the extra replication acknowledgement is on the commit path | B - asynchronous replication: Performance can improve by removing remote acknowledgement wait; Reliability decreases because acknowledged records can be absent at failover. Rejected as a silent durability relaxation; actual service guarantees remain A4 |
 
 ### QA-3 — Query availability
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-3 |
 |---|---|
-| Attribute(s) | Availability, resilience |
+| Primary Attribute | Availability |
+| Related quality effects | Security QA-5; Reliability QA-2 |
+| Functional invariants | Authorized complete query results |
 | Environment | Eligible service time, dependency/node/zone failure and overload |
 | Stimulus | Client queries while a component fails |
 | Response | Healthy replicas serve authorized complete prices; bounded failure/retry and recovery are visible |
@@ -150,15 +177,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 5/7.5; A4 unresolved; no selected provider durability guarantee or failover/restore measurements |
 | Architecture diagram | Architecture 5 container and 7.5 query/failover sequences |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D8/D5/D2: zones, synchronous standby and authoritative primary | R4: recovery/accounting undefined; R5: shared DB saturation | S4: failover duration/pool reservations; S5: identity/key validity | T3: durability/immediate consistency versus failover latency and cost | N3: CMS is absent from the synchronous read path; not proof of DB isolation |
+| D2/D8 | R4/R5/R6: recovery, primary contention and trust policy | S4/S5/S6 | T3 | None established for provider-specific failover or trust-window choice |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T3: Cached identity trust: Availability QA-3 vs Security QA-5 | A - longer bounded previously verified signing-key trust during IdP outage: Availability increases for verified cached identities; Security decreases because compromised-key invalidation may be delayed | B - short trust window/revalidation: Security increases by shortening stale trust exposure; Availability decreases when revalidation cannot complete during provider outage. Unknown keys fail closed in both options, token/session expiry is never extended or bypassed, and longer key trust does not authorize longer token life |
 
 ### QA-4 — Read scaling
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-4 |
 |---|---|
-| Attribute(s) | Scalability, performance |
+| Primary Attribute | Scalability |
+| Related quality effects | Availability QA-3; Performance QA-1 |
+| Functional invariants | Complete and stable pagination |
 | Environment | Same query/data mix at 100k and 1m daily requests, plus agreed peaks |
 | Stimulus | API demand increases tenfold |
 | Response | Sustain achieved traffic while bounding mean latency increase |
@@ -167,15 +204,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.5; A5/A13 unresolved; no load profile or capacity evidence |
 | Architecture diagram | Architecture 5 and 7.5 |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D5/D8: primary snapshots, indexes and resource reservations | R5: DB bottleneck; R3: cursor/version retention pressure | S4: pools/indexes/query skew; S6: cursor lifetime and retained versions | T4: current coherent reads versus scalable stale replicas; T5: stable pagination versus retention cost | N4: complete snapshot/expiry contract avoids silent cross-page version mixing |
+| D5/D8/D13 | R5/R3: DB saturation and retention | S4 | None | None: indexes/reservations require sizing; preserve them provisionally |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | A - retain bounded indexed primary reads and durable version manifests: supports the required current complete query response; exposes capacity/retention risks R3/R5 | B - introduce asynchronous read replicas or caches: may add read capacity but changes freshness semantics, which are functional query invariants here, not a separately established opposite QA effect. Requires a new freshness decision; no formal tradeoff asserted |
 
 ### QA-5 — Identity and authorization
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-5 |
 |---|---|
-| Attribute(s) | Security, confidentiality |
+| Primary Attribute | Security |
+| Related quality effects | Availability QA-3 |
+| Functional invariants | Hotel/operation scope enforced at every public interface |
 | Environment | Browser login and human/machine protected requests, including concurrent permission changes |
 | Stimulus | User logs in and attempts scoped functions |
 | Response | Provider validates identity; server permits only current hotel/operation grants and scopes administrative changes |
@@ -184,15 +231,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.1/7.5/8; A7 pending; negative/token/revocation tests not run |
 | Architecture diagram | Architecture 7.1 login and 7.5 query sequences |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D2: provider identity plus per-request current grants | R6: revocation/admin/machine scope acceptance unspecified | S5: grant-check time, session/key validity and in-flight duration | T6: current authorization versus DB cost and availability dependency | N5: server scope checks cover UI and machine access; passwords remain provider-owned |
+| D2 | R6: in-flight/key/admin boundaries | S5/S6 | T3 | N2: retain server-owned current authorization across every public interface |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T3: Cached identity trust: Availability QA-3 vs Security QA-5 | A - longer bounded previously verified signing-key trust during IdP outage: Availability increases for verified cached identities; Security decreases because compromised-key invalidation may be delayed | B - short trust window/revalidation: Security increases by shortening stale trust exposure; Availability decreases when revalidation cannot complete during provider outage. Unknown keys fail closed in both options, token/session expiry is never extended or bypassed, and longer key trust does not authorize longer token life |
 
 ### QA-6 — New query protocol
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-6 |
 |---|---|
-| Attribute(s) | Modifiability, security |
+| Primary Attribute | Modifiability |
+| Related quality effects | Security QA-5; Testability QA-9 |
+| Functional invariants | Transport parity of amounts, versions and errors |
 | Environment | Existing REST query service, development change |
 | Stimulus | Add a non-REST query endpoint |
 | Response | Add transport mapping and composition wiring while preserving query/auth semantics |
@@ -201,15 +258,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 6/7.6; no implementation or alternative-adapter diff exists |
 | Architecture diagram | Architecture 6 component and 7.6 extension sequence |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D9: protocol-neutral core | R7: boundary drift or omitted auth in added adapter | S7: transport types entering ports and contract parity | T7: adapter indirection versus extension/test independence | N6: specified principal-aware core owns authorization rather than transport alone |
+| D9 | R7: accidental coupling and contract drift | S7 | None | N3: retain protocol-neutral principal-aware application ports |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | A - protocol-neutral application ports with thin adapters: improves QA-6 extension and QA-9 isolation together | B - transport-specific core types: fewer initial mappings but risks core edits and harness coupling. Mapping effort is not another named QA; no opposite-direction tradeoff established |
 
 ### QA-7 — Environment promotion
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-7 |
 |---|---|
-| Attribute(s) | Deployability, recoverability |
+| Primary Attribute | Deployability |
+| Related quality effects | Availability QA-3; Reliability QA-2 |
+| Functional invariants | Artifact identity and schema overlap |
 | Environment | Integration-to-staging promotion with external endpoints/secrets differing |
 | Stimulus | Move application to another nonproduction environment |
 | Response | Promote identical UI/backend artifacts with validated runtime configuration |
@@ -218,15 +285,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.7; no pipeline promotion, config validation or rollback execution |
 | Architecture diagram | Architecture 7.7 environment sequence |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D10: immutable digests and expand/contract schema | R8: incompatible schema or config can defeat safe promotion/rollback | S7: configuration schema and compatibility window | T8: reversible overlap versus migration complexity and delayed cleanup | N7: backend/UI runtime configuration gives a coherent no-code-change mechanism |
+| D10 | R8: configuration/schema compatibility | S8 | None | N4: retain immutable artifacts plus runtime environment configuration |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | A - identical artifacts plus runtime configuration and compatible schema overlap: directly supports QA-7 environment movement | B - environment rebuilds and simultaneous breaking schema replacement: may reduce configuration/overlap work but threatens the requirement. Effort is not a second quality, and no measured QA-6 burden establishes a formal tradeoff |
 
 ### QA-8 — Complete measurements
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-8 |
 |---|---|
-| Attribute(s) | Monitorability, reliability |
+| Primary Attribute | Monitorability |
+| Related quality effects | Performance QA-1; Reliability QA-2 |
+| Functional invariants | Unknown timings explicitly labeled; no fabricated measurement |
 | Environment | Publication and retry activity during exporter/API crashes |
 | Stimulus | Operator requests publication performance and reliability measures |
 | Response | Export all durable identities/outcomes and label unknown timing rather than fabricate it |
@@ -235,15 +312,25 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.4; A8/A13 unresolved; no completeness reconciliation results |
 | Architecture diagram | Architecture 6 worker and 7.4 delivery/measurement sequence |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D7/D4: durable unsampled accounting | R9: exact timing/ingress completeness not satisfied by IDs; R3: retention pressure | S9: commit-to-timing crash window, export watermark and retention | T9: exhaustive durable telemetry versus write/storage overhead and QA-1 pressure | N8: exporter outage alone cannot erase durably accepted publication identities |
+| D7/D4 | R9/R3: exact timing, ingress scope and retention | S9 | T2 | None: full QA-8 collection remains incomplete |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T2: Unsampled durable ledger: Monitorability QA-8 vs Performance QA-1 | A - D7 retain unsampled accepted-publication evidence with D4 commit: Monitorability increases because each accepted publication has durable identity/outcome evidence; Performance decreases through added transaction writes/logging on the publication path | B - sampled or asynchronous volatile-only evidence: Performance can improve by removing hot-path writes; Monitorability decreases because unsampled/crash-window records can be missing. Not a compliant replacement for QA-8 |
 
 ### QA-9 — Independent integration tests
 
+#### Architectural Approach Analysis
+
 | Scenario | QA-9 |
 |---|---|
-| Attribute(s) | Testability, reliability |
+| Primary Attribute | Testability |
+| Related quality effects | Modifiability QA-6; Security QA-5 |
+| Functional invariants | Real storage semantics and complete element inventory |
 | Environment | Integration harness without live CMS/identity/enterprise business systems |
 | Stimulus | Test each system element and its integration behavior |
 | Response | Substitute external adapters; use real disposable storage for transactional/locking semantics |
@@ -252,19 +339,29 @@ Evidence references refer to the frozen architecture and validation plan. R, S, 
 | Evidence / assumptions | Architecture 7.6; validation inventory; A11 pending; harnesses not implemented/run |
 | Architecture diagram | Architecture 7.6 testing sequence |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D9/D10: ports, real storage and test doubles | R7: double/contract drift; R11: evidence effort exceeds capacity | S7: semantic fidelity/coverage; S10: staff and external test access | T7: isolated repeatability versus partner realism and maintenance effort | N9: planned real-store harness avoids mocking away transaction/lease behavior |
+| D9 | R7/R11: semantic fidelity and effort capacity | S10 | None | N3: retain replaceable external adapters; not a claim of executed coverage |
 
-### Step 8: Phase 2 analysis
+#### Trade-Off Map
 
-The [complete scenario pool](scenario-pool.md) records ten candidates and provenance. Analysis below covers every candidate independently of selection, including the five unselected scenarios S-01/07/08/09/10. Proposed numeric stress/recovery values are hypotheses awaiting agreement; they do not amend original requirements. Initial scenarios are also revalidated below. No risk is closed by a vote.
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | A - programmable external doubles with real disposable storage: supports QA-9 independence without mocking transaction semantics | B - live external systems for every integration test: improves immediate partner realism but violates independent execution. Fidelity is evidence quality, not a separately named opposite system QA here; partner staging checks complement A |
+
+### Step 8: Fresh Phase 2 analysis
+
+The current [scenario pool](scenario-pool.md) was freshly reviewed by five role agents on 2026-10-23. Stable IDs preserve comparison, not historical votes. Each candidate below has one primary attribute matching its pool label and any selected utility-tree leaf. Proposed stress/recovery values remain unapproved. All ten are analyzed regardless of their final vote counts.
 
 ### S-01 — Stale preview and lost-response replay
 
+#### Architectural Approach Analysis
+
 | Scenario | S-01, SH1 use case |
 |---|---|
-| Attribute(s) | Performance, reliability, monetary correctness |
+| Primary Attribute | Reliability |
+| Related quality effects | Performance QA-1; current authorization is an existing QA-5 prerequisite |
+| Functional invariants / constraints | HPS-2/4/5 monetary policy, complete PriceSets and one logical publication per command |
 | Environment | Normal load with overlapping policy activation |
 | Stimulus | Preview, activate different policy, submit stale version, refresh/commit and retry after lost response |
 | Response | Reject stale new command; fresh calculation uses approved policy; authorized replay returns original durable result |
@@ -273,17 +370,28 @@ The [complete scenario pool](scenario-pool.md) records ten candidates and proven
 | Evidence / assumptions | Architecture 7.2/7.3/8; A1/A2/A6/A12/A13 unresolved; no executable tests |
 | Architecture diagram | Architecture 7.3; authorization boundary in section 6 |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D2/3/4/13/14 | R1/R3/R6/R12: timing, expired replay, authorization and policy gaps | S1/S5/S6: lock, current grants and replay horizon | T1/T6: consistency/security versus work latency | N2/N5: atomic receipt and current authorization provide a coherent basis, subject to tests |
+| D2/3/4/13/14 | R1/R3/R6/R12 | S1/S5 | None | N1/N2 |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Version checks and committed replay protect QA-2 response invariants | Removing checks to save work is not an evidenced alternative for the same required behavior; hotel lock timing remains S1/R1. No additional formal T is established |
 
 Required action: domain owner approves monetary examples; engineering/QA proves stale-first-command versus committed replay behavior, including expired keys and revocation, before pricing acceptance. Architecture is conditionally adequate; golden policy and retention cannot be inferred from decimal representation.
 
+
 ### S-02 — Irreparable activation at scale
+
+#### Architectural Approach Analysis
 
 | Scenario | S-02, SH1 exploratory/growth |
 |---|---|
-| Attribute(s) | Correctness, reliability, availability, monitorability |
+| Primary Attribute | Reliability |
+| Related quality effects | Monitorability QA-8; Availability QA-3 only if price queries actually fail |
+| Functional invariants / constraints | HPS-4/5 compensated target, correct amounts, latest edits preserved; blocked administration is not a query outage |
 | Environment | Proposed 300 hotels x 365 dates with concurrent sales |
 | Stimulus | Immutable policy target becomes irreparable after partial publication |
 | Response | Trace versions/progress, preserve latest edits and converge via approved compensation/replacement |
@@ -292,17 +400,28 @@ Required action: domain owner approves monetary examples; engineering/QA proves 
 | Evidence / assumptions | Architecture 7.2/7.8; A6/A12, CMS and telemetry limits open; proposed time bound unmeasured |
 | Architecture diagram | Architecture 7.2 activation sequence |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D3/4/6/13/14 | R12: missing exceptional state transition; R1/R2/R3: convergence capacity | S1/S2/S3: per-hotel throughput, receiver and backlog | T1/T2: bounded recoverable work versus whole-hotel convergence speed | N2: task completion shares its publication transaction; this does not solve an invalid target |
+| D3/4/6/13/14 | R12/R2/R3 | S1/S3 | None | N1 |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Retain durable bounded per-date activation; it preserves recoverability but has missing exceptional compensation policy | An unbounded atomic hotel recalculation changes work scope and risks latency, but no opposite named QA effect is established for the proposed recovery criteria. This is R12 design incompleteness, not a formal T |
 
 Required action: domain/pricing owners define approval, compensating state transitions, published-price consequences and cross-date acceptability; designer revisits D14 then QA performs partial-failure/concurrent-edit tests. Baseline does not satisfy the requested exceptional recovery behavior yet. No 30-minute commitment is supportable.
 
+
 ### S-03 — Lost CMS receipts and late requests
+
+#### Architectural Approach Analysis
 
 | Scenario | S-03, SH2 use case |
 |---|---|
-| Attribute(s) | Reliability, monitorability |
+| Primary Attribute | Reliability |
+| Related quality effects | Monitorability QA-8 |
+| Functional invariants / constraints | Publication order, deduplication and receipt identity |
 | Environment | CMS receives N, acknowledgement lost, worker lease expires and late request arrives |
 | Stimulus | Retry same publication while N+1 waits |
 | Response | Recover durable receipt; no duplicate logical effect/stale overwrite; other hotels progress |
@@ -311,17 +430,28 @@ Required action: domain/pricing owners define approval, compensating state trans
 | Evidence / assumptions | Architecture 7.4; A2/A3/A8/A13 open, receiver support not demonstrated |
 | Architecture diagram | Architecture 7.4 delivery sequence |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D4/6/7/13 | R2/R3/R9: contract, drain/retention and evidence | S2/S3/S9: dedup horizon, throughput and ledger | T2/T9: ordering/accounting versus drain and I/O | N2/N8: local task/ledger durability narrows loss windows, not receiver proof |
+| D4/6/7/13 | R2/R3/R9 | S3/S9 | None | N1 |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Preserve receipt-confirmed ordered retry and no silent discard | Relaxing order can alter QA-2 safety/progress; both effects concern the same attribute. Worker concurrency versus query impact remains conditional on unapproved recovery bounds, not an established cross-attribute T |
 
 Required action: CMS/integration owners implement or negotiate receiver capabilities and test duplicate, late, 202 and receipt-lookup paths before integration sign-off; measure arrival/drain rate before accepting five minutes. Conditional design fit only.
 
+
 ### S-04 — Legacy request fencing across authority changes
+
+#### Architectural Approach Analysis
 
 | Scenario | S-04, SH2 exploratory |
 |---|---|
-| Attribute(s) | Reliability, availability, auditability |
+| Primary Attribute | Reliability |
+| Related quality effects | Monitorability QA-8; Availability QA-3 only for actual query interruption |
+| Functional invariants / constraints | One writer, mapped producer identities and no obsolete-authority overwrite |
 | Environment | Legacy freeze, HPS writes and ambiguous legacy deliveries; different namespaces |
 | Stimulus | Delayed legacy request arrives while rollback is requested |
 | Response | Map outstanding identities/receipts, reject obsolete producer authority, block unresolved cutover and reverse-reconcile before rollback |
@@ -330,17 +460,27 @@ Required action: CMS/integration owners implement or negotiate receiver capabili
 | Evidence / assumptions | Architecture 7.8; A3/A10 open; epoch/equivalent mechanism and legacy export contract absent |
 | Architecture diagram | Architecture 7.8 cutover plus 7.4 delivery |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D6/7/12 | R10/R2: producer epoch/namespace and legacy receipt gap | S2/S8: receiver fence and transfer watermark | T2/T8: controlled transition versus freeze/coordination cost | N10: baseline explicitly prohibits blind legacy rollback after new writes |
+| D6/7/12 | R10/R2 | S3 | None | None: obsolete-authority receiver fencing remains missing |
 
-N10 is a new conditional nonrisk: a refusal to perform unsafe rollback, not a completed migration protocol. Migration/CMS owners must specify authority generations or equivalent receiver fencing, rehearse delayed legacy traffic and prove reverse reconciliation before cutover. Current baseline is incomplete for this adversarial ordering case.
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Require receiver-recognized authority fencing and reconciled transfer | Routing-only rollback is unsafe for the same QA-2 objective; freeze/coordination cost alone is not a second quality. Missing protocol is R10 |
+
+Closure action: see linked risk register owner and gate; baseline evidence is structural only.
 
 ### S-05 — Query growth with hot-hotel mutation
 
+#### Architectural Approach Analysis
+
 | Scenario | S-05, SH3 growth |
 |---|---|
-| Attribute(s) | Performance, scalability, availability, monitorability |
+| Primary Attribute | Scalability |
+| Related quality effects | Performance QA-1; Availability QA-3; Monitorability QA-8 |
+| Functional invariants / constraints | Complete prices; no success claimed by dropping traffic |
 | Environment | 100k to 1m daily equivalents; proposed 30-minute tenfold-average peak and 50% mutations at one hotel |
 | Stimulus | Query surge concurrent with edits/activation |
 | Response | Protect queries, bound background work and expose queueing/errors/starvation |
@@ -349,17 +489,28 @@ N10 is a new conditional nonrisk: a refusal to perform unsafe rollback, not a co
 | Evidence / assumptions | Architecture 7.3/7.5; A1/A4/A5/A12 unresolved; no mixed stress test |
 | Architecture diagram | Architecture 5/7.3/7.5 |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D5/8/13/14 | R1/R5: contention and starvation; R3: accumulated work | S1/S3/S4: lock queue, background drain and DB saturation | T1/T4: ordering/freshness versus scaling; T10: query reservations versus worker convergence | N3: CMS network calls do not synchronously consume query flow |
+| D5/8/13/14 | R1/R5/R3 | S1/S4 | None | None: capacity/reservations require sizing |
 
-T10 extends the tradeoff register: preserving interactive query resources can worsen delivery/activation drain time; increasing worker allocation can reverse that effect. Performance/SRE owners must measure full offered/completed/error workload with bursts and fairness before capacity sign-off. No capacity conclusion follows from API replica count.
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Reserve query resources and bound background work under shared-primary load | More worker capacity can alter query/recovery behavior, but no agreed QA-2 deadline or measured capacity exists. Competing performance workloads alone are not two attributes; R1/R5 remain |
+
+Performance/SRE owners must measure full offered/completed/error workload with bursts and fairness before capacity sign-off. No capacity conclusion follows from API replica count.
+
 
 ### S-06 — Failover under telemetry and retention pressure
 
+#### Architectural Approach Analysis
+
 | Scenario | S-06, SH3 exploratory |
 |---|---|
-| Attribute(s) | Reliability, availability, monitorability |
+| Primary Attribute | Availability |
+| Related quality effects | Reliability QA-2; Monitorability QA-8; Performance QA-1 is a related effect of T1/T2, not the primary attribute |
+| Functional invariants / constraints | No pending-task/live-snapshot pruning and no invented timing |
 | Environment | Proposed 24-hour export outage, 70% starting storage and one DB-zone failure |
 | Stimulus | Primary fails while records and snapshot references accumulate |
 | Response | Restore queries/tasks and resume export without deleting pending obligations/live references; label unknown timing |
@@ -368,55 +519,89 @@ T10 extends the tradeoff register: preserving interactive query resources can wo
 | Evidence / assumptions | Architecture 5/7.4/7.5/8; A4/A8/A13 unresolved; no failover/storage experiment |
 | Architecture diagram | Architecture 5 container and 7.4/7.5 sequences |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D5/7/8 | R3/R4/R5/R9: capacity, recovery, interference and exact timing | S3/S4/S6/S9: storage, failover, manifest life and export lag | T3/T5/T9/T10: durability/retention/accounting versus latency/drain | N4/N8: explicit snapshot retention and durable accepted IDs prevent silent cleanup as a valid tactic |
+| D5/7/8 | R3/R4/R5/R9 | S2/S4/S9 | T1/T2 | None: provider-specific durability/recovery remains unresolved |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T1: Synchronous replication: Reliability QA-2 vs Performance QA-1 | A - D8 synchronous standby: Reliability increases because commit acknowledgement waits for a durable replica under the selected service contract; Performance decreases because the extra replication acknowledgement is on the commit path | B - asynchronous replication: Performance can improve by removing remote acknowledgement wait; Reliability decreases because acknowledged records can be absent at failover. Rejected as a silent durability relaxation; actual service guarantees remain A4 |
+| T2: Unsampled durable ledger: Monitorability QA-8 vs Performance QA-1 | A - D7 retain unsampled accepted-publication evidence with D4 commit: Monitorability increases because each accepted publication has durable identity/outcome evidence; Performance decreases through added transaction writes/logging on the publication path | B - sampled or asynchronous volatile-only evidence: Performance can improve by removing hot-path writes; Monitorability decreases because unsampled/crash-window records can be missing. Not a compliant replacement for QA-8 |
 
 SRE/operations must choose storage guarantees, size outage/replay horizons and rehearse recovery with active workloads before accepting proposed RTO/RPO. Until then all proposed numbers remain unverified and QA-8 exact timing remains partial.
 
+
 ### S-07 — Revocation on cursor and receipt replay
+
+#### Architectural Approach Analysis
 
 | Scenario | S-07, SH4 use case |
 |---|---|
-| Attribute(s) | Security, auditability |
+| Primary Attribute | Security |
+| Related quality effects | Performance QA-1 through grant lookup overhead; audit is evidence, not expanded QA-8 |
+| Functional invariants / constraints | Hotel/operation scopes and current authorization before replay disclosure |
 | Environment | Multiple replicas, human/machine grants revoked, some already-authorized in-flight requests |
 | Stimulus | Reuse token/session/cursor/publication ID/idempotency key and substitute hotel ID |
 | Response | Current grants precede disclosure/mutation on every post-revocation authorization; audit in-flight boundary |
-| Response measure | Zero unauthorized exposure/change after a post-revocation check; zero bypass routes; proposed 1,000 attempts per path/replica combination |
+| Response measure | Zero unauthorized exposure/change after a post-revocation check; zero bypass routes; no new attempt-count threshold in this run |
 | Reasoning | Section 8's all-interface authorization and current page checks support this. Sequence 7.3 must not be misread as receipt replay preceding authorization; A7 explicitly allows already-authorized work to finish |
 | Evidence / assumptions | Architecture 6/7.1/7.3/7.5/8; A7 open; no attack tests |
 | Architecture diagram | Architecture 6 authorization boundary and 7.5 query |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D2/5 | R6: path omissions or stricter revocation expectation | S5: authorization-check point and in-flight duration | T6: current grant reads versus DB availability/load | N5: authoritative server grants apply to replay as a public interface |
+| D2/5 | R6 | S5 | None | N2 |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Check current grants on every replay, cursor and mutation | Cached grants are not a demonstrated availability improvement when prices and grants share the primary. Authorization is S5; implementation latency overhead alone does not establish a high-leverage opposing-QA tradeoff |
 
 Security/engineering must enumerate every interface and prove current scope before replay/pagination result access, with authorization revision in evidence. A requirement to abort already-authorized commits would reopen D2; this evaluation does not silently impose it.
 
+
 ### S-08 — Key rotation and IdP outage
+
+#### Architectural Approach Analysis
 
 | Scenario | S-08, SH4 exploratory |
 |---|---|
-| Attribute(s) | Security, availability, monitorability, testability |
+| Primary Attribute | Security |
+| Related quality effects | Availability QA-3 |
+| Functional invariants / constraints | Unknown keys and expired tokens rejected under both trust policies |
 | Environment | Proposed 15-minute IdP/JWKS outage during rotation |
 | Stimulus | Requests with cached valid and unknown signing keys |
 | Response | Fail closed for unknown/unverified identities; enforce approved cached trust/expiry/current grants; bound refresh work and count failures |
-| Response measure | Zero unverified access/expiry bypass; proposed alert <=60 seconds, valid new-key recovery <=5 minutes after provider return |
+| Response measure | Zero unverified access/expiry bypass; no new alert/recovery time in this run; trust and emergency invalidation remain open |
 | Reasoning | Baseline specifies fail-closed unknown keys and continuing valid sessions, but maximum trust age, compromised-key emergency invalidation and cache refresh contention are undefined |
 | Evidence / assumptions | Architecture 7.1/7.5; A4/A7 unresolved; no provider-outage or compromised-key test |
 | Architecture diagram | Architecture 7.1 identity and 7.5 dependency flow |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D2/8/9 | R6/R4: key trust and outage accounting unresolved | S5/S4: cache/session validity and refresh resource bound | T11: longer cached trust improves continuity but delays compromised-key revocation | N5: unknown/unverified identity is specified to fail closed |
+| D2/8/9 | R6/R4 | S6 | T3 | N2: authorization ownership only, not trust-window selection |
 
-T11 extends the register. Security/operations define maximum trust, emergency key/session invalidation and refresh limits; QA simulates rotation/outage/recovery and checks counted failures. Availability must not be improved by accepting an unverified key.
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| T3: Cached identity trust: Availability QA-3 vs Security QA-5 | A - longer bounded previously verified signing-key trust during IdP outage: Availability increases for verified cached identities; Security decreases because compromised-key invalidation may be delayed | B - short trust window/revalidation: Security increases by shortening stale trust exposure; Availability decreases when revalidation cannot complete during provider outage. Unknown keys fail closed in both options, token/session expiry is never extended or bypassed, and longer key trust does not authorize longer token life |
+
+Security/operations define maximum trust, emergency key invalidation and refresh limits; QA simulates rotation/outage/recovery and checks counted failures. Availability must not be improved by accepting an unverified key.
+
 
 ### S-09 — Alternative protocol with trustworthy tests
 
+#### Architectural Approach Analysis
+
 | Scenario | S-09, SH5 growth |
 |---|---|
-| Attribute(s) | Modifiability, security, testability |
+| Primary Attribute | Modifiability |
+| Related quality effects | Testability QA-9; Security QA-5 |
+| Functional invariants / constraints | Amounts, errors, versions and authorization semantics preserved |
 | Environment | Integration with external doubles and production-equivalent real storage |
 | Stimulus | Developer adds alternative price query transport |
 | Response | Adapter/composition-only implementation preserves scopes, amounts, versions, pagination/errors and independent testability |
@@ -425,17 +610,28 @@ T11 extends the register. Security/operations define maximum trust, emergency ke
 | Evidence / assumptions | Architecture 6/7.6; A7/A11/A13; no source diff or harness execution |
 | Architecture diagram | Architecture 7.6 |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D9 | R7/R6: contract drift and auth parity | S7/S5: core coupling and permission semantics | T7: isolation/repeatability versus mapping/fidelity effort | N6/N9: principal-aware core plus real storage is a coherent test boundary |
+| D9 | R7/R6 | S7/S10 | None | N3 |
+
+#### Trade-Off Map
+
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Keep protocol-neutral core and real-store/external-double harnesses | Ports support QA-6 and QA-9 in the same direction. Mapping effort and mock maintenance are costs, not opposing quality attributes |
 
 Engineering/QA must demonstrate unchanged-core diff, parity and complete harness coverage, then compare staging against partner contracts. This is design-supported, not implemented evidence.
 
+
 ### S-10 — Release and rollback after writes
+
+#### Architectural Approach Analysis
 
 | Scenario | S-10, SH5 use case/exploratory |
 |---|---|
-| Attribute(s) | Deployability, reliability, testability, buildability |
+| Primary Attribute | Deployability |
+| Related quality effects | Reliability QA-2; Testability QA-9; CON-4 is a delivery constraint |
+| Functional invariants / constraints | Artifact identity, compatible schema and reconciled authority changes |
 | Environment | Staging old/new binaries, schema overlap, legacy fixture and CMS double; two/six-month constraint |
 | Stimulus | Defect after HPS accepts writes and CMS publications |
 | Response | Distinguish same-schema binary rollback from legacy authority reversal; reconcile writes/receipts, block unsafe rollback and prepare forward recovery |
@@ -444,25 +640,32 @@ Engineering/QA must demonstrate unchanged-core diff, parity and complete harness
 | Evidence / assumptions | Architecture 7.7/7.8, iteration-plan; A2/A3/A9/A10/A11 pending; no release rehearsal |
 | Architecture diagram | Architecture 7.7 promotion and 7.8 cutover |
 
-| Architectural Decisions | Risk | Sensitivity | Tradeoff | Nonrisk |
+| Architectural Decisions | Risk | Sensitivity | Tradeoff | Non-risk |
 |---|---|---|---|---|
-| D10/11/12 | R8/R10/R11: schema, business-state reversal and delivery feasibility | S7/S8/S10: compatibility, watermarks and capacity | T8: reversible overlap versus complexity; T12: smaller delivery scope versus feature breadth by deadline | N7/N10: immutable promotion and explicit unsafe-rollback refusal are sound scoped mechanisms |
+| D10/11/12 | R8/R10/R11 | S8 | None | N4 |
 
-T12 extends the register. Engineering/product/platform/CMS owners must staff and estimate the minimum scope, secure partner access and rehearse binary rollback separately from authority rollback. Architecture buildability is undetermined; no extra microservice/platform work is recommended without an identified requirement.
+#### Trade-Off Map
 
-### Step 8 revalidation of all initial scenarios
+| Trade-Off | Option A leans toward | Option B leans toward |
+|---|---|---|
+| None established | Promote immutable artifacts and preserve declared schema overlap | Rollback coordination/implementation effort and CON-4 deadlines are constraints, not demonstrated opposing named QA effects. External-state reversal remains R10 |
 
-| Initial scenario | Phase 2 challenge and resulting disposition |
+Engineering/product/platform/CMS owners must staff and estimate the minimum scope, secure partner access and rehearse binary rollback separately from authority rollback. Architecture buildability is undetermined; no extra microservice/platform work is recommended without an identified requirement.
+
+
+### Step 8 revalidation of all nine initial scenarios
+
+| Initial scenario / primary attribute | Current candidate challenge and disposition |
 |---|---|
-| QA-1 | S-01/S-05 expose policy overlap and hot-hotel waits; R1 remains open, 90 ms is not evidence and overload cannot redefine normal workload silently |
-| QA-2 | S-01/02/03/04/06/10 expose expired replay, permanent activation block, receiver ambiguity and authority transitions; R2/R3/R10/R12 remain open |
-| QA-3 | S-02/05/06/08 add starvation, storage failover and identity rotation; R4/R5 remain open; count dependency failures and keep original uptime definition distinct from stress success proposals |
-| QA-4 | S-05/06 test shared-primary skew and retention; R5 remains open, proposed peak is not an approved capacity ceiling |
-| QA-5 | S-07/08/09 cover replay/cursor/current grants and key trust; R6 remains open, no evidence of implemented bypass is asserted |
-| QA-6 | S-09 requires real alternate-adapter diff/parity; N6 remains conditional and R7 open |
-| QA-7 | S-10 separates artifact portability from irreversible data/external effects; N7 remains conditional and R8/R10 open |
-| QA-8 | S-02/03/04/05/06/07/08 require progress, audit and unknown-outcome accounting; R9 remains open, exact timing is not recovered by vote or ledger IDs |
-| QA-9 | S-08/09/10 expand partner/failure/migration test fidelity; N9 remains conditional, R7/R11 open |
+| QA-1 / Performance | S-01/S-05 expose policy overlap and hotel-lock waits; R1 remains. T1/T2 concern commit/telemetry cost, not an invented throughput versus simplicity attribute |
+| QA-2 / Reliability | S-01..04/S-06/S-10 require receiver guarantees, expired replay policy, permanent activation compensation and authority mapping. R2/R3/R10/R12 remain; ordering/HOL is not automatically a cross-QA tradeoff |
+| QA-3 / Availability | S-06/S-08 address DB failure and valid-identity trust. R4/R5/R6 remain. Blocked configuration or write freeze alone is not query unavailability |
+| QA-4 / Scalability | S-05 mixed load and S-06 retention pressure expose shared primary. R5 remains; resource competition is not automatically two opposing attributes |
+| QA-5 / Security | S-07/S-08/S-09 challenge replay, key trust and protocol parity. N2 remains sound responsibility; R6 remains for policy/implementation. T3 concerns known-key trust only |
+| QA-6 / Modifiability | S-09 requires unchanged core and parity evidence. N3 retained; R7 remains. QA-6/9 improve together, so not a formal tradeoff |
+| QA-7 / Deployability | S-10 distinguishes binary and authority rollback. N4 retained; R8/R10 remain. Migration effort and schedule constraints are not additional QA branches |
+| QA-8 / Monitorability | S-02/03/04/05/06 expose publication progress/reconciliation. R9 remains; unrelated security audit is supporting evidence, not automatic expansion of QA-8. T2 does not solve exact timing |
+| QA-9 / Testability | S-09/S-10 require complete independent harness and real partner comparison. N3 retained; R7/R11 remain. No runtime proof or effort-based opposing-QA tradeoff |
 
 ## 5. Summary
 
@@ -485,49 +688,53 @@ T12 extends the register. Engineering/product/platform/CMS owners must staff and
 
 R12 is a functional integrity/operability finding from architecture 7.2/7.8, even though it is not a separate initial QA leaf. Its evaluation must not disappear because the nine initial QA scenarios omit explicit activation recovery.
 
-Designer challenge review on 2026-10-19 adds specificity without changing the baseline: R3 includes a replay after idempotency receipt/receiver deduplication expiry, which can reapply a command unless horizons and expired-key rejection/tombstone/archive lookup are coordinated. R6 includes cached signing-key maximum trust age and emergency compromised-key/session invalidation, currently unspecified. Idempotent replay must authorize before returning an old receipt: architecture section 8 requires current grants on every public interface; section 7.3's replay precedence concerns stale version checks, not permission checks. Its abbreviated diagram is an implementation traceability hazard, not evidence that bypass is intended. R10 includes legacy/new producer epoch and namespace mapping against late old requests; general watermark language is not a complete receiver fencing protocol. R5 includes DB CPU/I/O/WAL/checkpoint/storage contention: separate connection pools alone do not isolate these resources.
+Historical designer concerns from 2026-10-19 were rechecked against the unchanged source during this rerun; they are not presented as fresh stakeholder votes: R3 includes a replay after idempotency receipt/receiver deduplication expiry, which can reapply a command unless horizons and expired-key rejection/tombstone/archive lookup are coordinated. R6 includes cached signing-key maximum trust age and emergency compromised-key invalidation, currently unspecified. Idempotent replay must authorize before returning an old receipt: architecture section 8 requires current grants on every public interface; section 7.3's replay precedence concerns stale version checks, not permission checks. Its abbreviated diagram is an implementation traceability hazard, not evidence that bypass is intended. R10 includes legacy/new producer epoch and namespace mapping against late old requests; general watermark language is not a complete receiver fencing protocol. R5 includes DB CPU/I/O/WAL/checkpoint/storage contention: separate connection pools alone do not isolate these resources.
 
-### Sensitivities and tradeoffs
+### Sensitivity register - decision and one high-leverage attribute
 
-S1 lock/calculation/commit timing; S2 receiver deduplication/sequence horizon; S3 backlog/drain/storage; S4 DB/pool/failover parameters; S5 grant/key/session/in-flight boundaries; S6 snapshot lifetime/version retention; S7 adapter/config/contract fidelity; S8 migration watermarks; S9 timing/export persistence window; S10 available implementation capacity. T1 ordering versus concurrency; T2 ordered lossless delivery versus backlog/blocking; T3 synchronous durability versus latency/cost; T4 fresh reads versus scalable replicas; T5 stable pagination versus retention cost; T6 current permission checks versus dependency load; T7 adapter isolation versus mapping/test upkeep; T8 compatible rollback versus migration complexity; T9 complete telemetry versus hot-path/storage work; T10 query reservation versus worker convergence; T11 cached key trust versus emergency compromise revocation; T12 scope breadth versus feasible delivery dates. These are mechanisms and competing quality effects, not arbitrary numeric scores.
+| ID | Decision/parameter | Named quality and structural leverage |
+|---|---|---|
+| S1 | D13 exclusive hotel mutation lock | Performance QA-1: hold time and arrival skew directly govern queue wait on publication |
+| S2 | D8 replication acknowledgement policy | Reliability QA-2: whether accepted records survive primary failure depends on acknowledgement/durability boundary |
+| S3 | D6 receiver receipt/deduplication/sequence contract | Reliability QA-2: absent receiver support, late/repeated sends can lose the end-to-end guarantee |
+| S4 | D5/D8 primary query workload and reservations | Scalability QA-4: CPU/I/O/query mix and bounded capacity determine latency at tenfold load |
+| S5 | D2 current grant-check policy | Security QA-5: check point determines which revoked scopes may still act |
+| S6 | D2 maximum known-key trust lifetime | Security QA-5: maximum trust of previously verified signing keys controls compromise exposure window; token/session expiry remains a separate fixed bound |
+| S7 | D9 protocol-neutral application boundary | Modifiability QA-6: transport leakage forces core changes for an additional protocol |
+| S8 | D10 runtime configuration/artifact identity | Deployability QA-7: environment-specific compilation would violate no-code-change promotion |
+| S9 | D7 unsampled durable ledger policy | Monitorability QA-8: persistence/sampling determines recoverable publication evidence coverage |
+| S10 | D9 real-store and replaceable-external harness design | Testability QA-9: doubles and real transaction semantics determine independent coverage |
 
-### Questions by quality attribute
+A formal tradeoff below has two explicit sensitivity effects; the register's one-attribute entries are starting points, not assertions that decisions affect only one quality.
 
-| Attribute | Questions to resolve before claims are accepted |
-|---|---|
-| Performance | What is normal mixed/skewed traffic, maximum room/rate graph and exact start/end clock? Is any statistical interpretation permitted by the strict target? |
-| Reliability | Which commits count, how long can CMS be unavailable, what is the delivery deadline, and what receiver guarantees and replay horizon are contractual? |
-| Availability | Which period/exclusions, dependency failures, regional loss and recovery objectives apply? |
-| Scalability | Which query shape, data size, hotel skew and burst peaks define comparable baseline/high volume? |
-| Security | How soon must revocation stop in-flight work and delivery, who may redrive/compensate, and what are machine/admin scopes? |
-| Modifiability | Which second protocol and unchanged-core boundary demonstrate semantic and authorization parity? |
-| Deployability | Which config/schema compatibility window and rollback conditions are required? |
-| Monitorability | Does 100% mean IDs, outcomes, exact latency, rejected ingress or all; how are unknown measurements and retention treated? |
-| Testability | Which real-store/cloud semantics must be in independent harnesses, and how is external-double drift detected? |
-| Functional integrity/buildability | What monetary/effective-date policy and activation compensation are acceptable; what actual staff, budget, scope and partner access support delivery dates? |
+### Formal tradeoff register
+
+| ID | Decision | First sensitivity | Opposite sensitivity | Evidence/limit |
+|---|---|---|---|---|
+| T1 | D8 synchronous vs asynchronous replication acknowledgement | Reliability QA-2 rises with synchronous durable-copy acceptance | Performance QA-1 worsens with extra acknowledgement wait on commit | Architecture 5/7.3/7.5; service-specific magnitude/durability unproved |
+| T2 | D7 durable unsampled accepted-publication evidence vs reduced hot-path evidence | Monitorability QA-8 improves coverage/reconstruction | Performance QA-1 worsens through additional publication transaction writes | Architecture 7.3/7.4; no measured effect and exact timing still incomplete |
+| T3 | D2 longer vs shorter maximum trust for previously verified signing keys | Availability QA-3 improves during provider outage with longer trust | Security QA-5 worsens through delayed compromised trust invalidation | Architecture 7.5; A7 window/emergency policy unresolved; unknown keys always fail closed and neither option extends token/session expiry |
+
+Only these three are currently established as formal directional tradeoffs. Current-grant checks are a QA-5 sensitivity, not a formal QA-3 tradeoff here: grants and prices share the primary, so cached grants alone do not demonstrate query continuity during primary loss. Ordered delivery head-of-line delay is a QA-2 realization risk, not automatically a second quality. Snapshot retention cost is a resource concern. Protocol ports improve QA-6 and QA-9 together; implementation effort is not an opposite named quality. Deadline/scope is CON-4 and functional scope, not an invented QA. Compatible schema overlap has no demonstrated opposite QA-6 requirement here.
+
+### Non-risk register - sound decisions requiring no architectural change in scope
+
+| ID | Decision retained | Justification and boundary |
+|---|---|---|
+| N1 | D4 local atomic price/publication/task/receipt commit | Removes local dual-write inconsistency within one storage transaction; no architectural change to this boundary is needed. Does not establish remote receipt, failover durability or latency compliance |
+| N2 | D2 server-owned authorization on every public interface | Prevents UI-only enforcement and places scope checks at authoritative boundary; retain this responsibility, while A7 key/revocation policy is unresolved |
+| N3 | D9 protocol-neutral principal-aware ports and replaceable external adapters | Fits explicit QA-6/9 extension/isolation goals without duplicated transport business logic; retain boundary, while actual harness/parity evidence is absent |
+| N4 | D10 immutable artifacts with runtime UI/backend configuration | Directly supports no-code-change environment movement; retain configuration strategy, while schema/secret correctness and promotion tests remain pending |
+
+No other tactic is called a non-risk merely because its intended mechanism sounds plausible. Unresolved sizing, compensation, identity trust and provider contracts remain risks.
 
 ### Step 9: Present results
 
-The final report presents ten approaches, a 14-leaf utility tree, all 25 public votes and 19 scenario analyses with initial-scenario revalidation. It records **12 risks, 10 scoped nonrisks, 10 sensitivity points, 12 tradeoffs and five risk themes**. The five vote winners emphasize activation recovery, CMS receipt, legacy authority fencing, mixed-load contention and failure under retention pressure. Unselected security, protocol and delivery concerns remain analyzed and actionable. The facilitator returns this report to the same stakeholder roles; closing review is recorded in [participation](participation.md). This presentation does not imply real business approval.
+This fresh evaluation records ten approaches, a 14-leaf final utility tree, 25 current public votes, 19 scenario analyses with 19 Trade-Off Maps, twelve risk findings, ten sensitivity points, three formal opposite-direction quality tradeoffs, four scoped non-risks and five risk themes. Initial scenarios are explicitly revisited against the new candidates. Results are returned to the same five simulated roles; closing presentation is recorded by the facilitator in [participation](participation.md). This is document-level evaluation, not real stakeholder acceptance or runtime proof.
 
-**Quality suitability: conditionally plausible, not established.** Atomic local publication, explicit server authorization, ports and immutable promotion are coherent mechanisms. The exceptional activation recovery transition and cross-generation receiver authority protocol remain incomplete. CMS guarantees, performance/capacity, failover durability, exact measurement completeness and policy acceptance remain unproved. These gaps prevent an unconditional conclusion that the resulting system will meet its quality goals. Runtime testing and actual owner decisions are required; no benchmark or implementation compliance is claimed.
+**Quality suitability is conditional and not established.** Retain the four justified decisions in the non-risk register. Resolve exceptional activation compensation (A12) and cross-generation receiver authority/receipt/replay policy (A2/A3/A10/A13), then execute the planned latency, capacity, fault, security and completeness experiments. Remaining gaps can prevent the resulting system from meeting its quality goals; no unconditional production readiness is asserted.
 
-**Buildability: undetermined**, as detailed below. Recommended next work is targeted ADD refinement of D14/A12 exceptional compensation and D6/D12 authority/receipt/replay contracts, followed by early high-risk experiments and a staffed delivery plan. The evaluation itself does not rewrite these decisions or treat the proposed scenario timing targets as accepted requirements.
-
-### Scoped nonrisk index
-
-| ID | Credible mechanism and explicit limit |
-|---|---|
-| N1 | CMS is outside the local publication timing path; lock/DB latency remains |
-| N2 | Atomic price/task/receipt creation removes the local dual-write gap; receiver guarantees remain external |
-| N3 | CMS network calls are absent from synchronous reads; shared DB contention remains |
-| N4 | Complete snapshots, durable manifests and explicit expiry prevent silent page mixing if implemented; retention sizing remains open |
-| N5 | Current server grants and provider identity are explicit across interfaces; key/revocation boundaries require proof |
-| N6 | Principal-aware protocol-neutral core provides an extension boundary; no alternate-adapter implementation was inspected |
-| N7 | Runtime UI/backend configuration and immutable digests support portability; actual promotion/schema compatibility remain untested |
-| N8 | Durable accepted IDs survive exporter outage; exact crash-window timings are not thereby recovered |
-| N9 | Real-store harness plan preserves locking/transaction semantics in tests; no harness was executed |
-| N10 | Explicit refusal of blind authority rollback avoids a knowingly unsafe policy; complete transition protocol remains missing |
+**Buildability remains undetermined:** actual staffing, scope, budget, provider and partner readiness are unknown. The gated actions below and capacity-backed plan are required before the two/six-month constraints can be substantiated. The report recommends targeted subsequent ADD refinement; it does not perform ADD again or change its baseline.
 
 ### Risk themes and closure gates
 
@@ -544,3 +751,8 @@ Gate priority is consequence-based, not a substitute for the stakeholder ranking
 ### Buildability assessment
 
 D1's familiar Java/Angular stack, one modular application and separate worker avoid unnecessary distributed transaction and platform scope. D9/D10 provide credible extension/testing/deployment boundaries. However A9 leaves team size/skills allocation, budget, cloud provider, kickoff and MVP scope unknown; CMS receiver work, A12 compensation design, migration and the extensive evidence program can dominate the critical path. Consequently the second suitability criterion, buildability with available resources, is **undetermined**. A resource-backed work plan must include external contract lead times and early spikes for hotel-lock latency, CMS ambiguity and exceptional activation before a two-month MVP/six-month release commitment is defensible. This evaluation does not assume four separate teams merely because the ADD plan names four responsibility areas.
+
+### Classification changes from the archived evaluation
+
+The unchanged ADD baseline is reassessed with stricter definitions. The former twelve broad tradeoff labels are not retained as formal tradeoffs: only three structurally supported opposite-QA decisions remain in this report. Former labels about ordering/simplicity, head-of-line progress, freshness, retention cost, mapping effort, query/worker competition and deadline/scope are now identified as sensitivities, risks, functional invariants or constraints as appropriate. Four scoped non-risks remain; other plausible tactics are not called sound/no-change while their decisive contracts, policies or sizing are unresolved. This reclassification does not claim those concerns were fixed. No source architecture or requirement is rewritten.
+

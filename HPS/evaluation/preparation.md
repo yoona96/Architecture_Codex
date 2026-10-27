@@ -1,6 +1,6 @@
 # HPS ATAM Preparation
 
-Evaluation started 2026-10-18, resumed 2026-10-19 and finalized 2026-10-20, Asia/Seoul. This document records ATAM Steps 1-3 using the completed five-iteration ADD baseline. It is a document-based, agent-simulated evaluation, not a workshop with actual employees, approval by AD&D Hotels, implementation testing, or a production certification. Requirements and ADD files remain unchanged. Their statements that ATAM is subsequent describe the historical baseline; this evaluation is the subsequent record.
+Fresh ATAM rerun started 2026-10-23 and finalized 2026-10-24, Asia/Seoul. Earlier evaluation is preserved under history/2026-10-20 and is not current participation evidence. This document records ATAM Steps 1-3 using the completed five-iteration ADD baseline. It is a document-based, agent-simulated evaluation, not a workshop with actual employees, approval by AD&D Hotels, implementation testing, or a production certification. Requirements and ADD files remain unchanged. Their statements that ATAM is subsequent describe the historical baseline; this evaluation is the subsequent record.
 
 ## Step 1: Present ATAM and evaluation rules
 
@@ -12,7 +12,7 @@ Importance and difficulty use integers 0..100 in increments of 10. Importance an
 
 Each stakeholder may cast up to five votes, at most one per candidate, after viewing the merged pool and other roles' concerns. Rank by votes descending, then numeric scenario ID ascending. The evaluator and designer do not vote. Duplicate candidates merge only when stimulus, response and concern are equivalent; overlapping scenarios may remain separate. Proposed numeric targets in stakeholder scenarios remain proposals until business owners agree; original QA targets are not silently amended.
 
-Risk means a design choice, missing decision or evidence gap can threaten a scenario. Nonrisk means a narrowly scoped design rationale is credible under stated conditions, never a passed test. Sensitivity names an architectural parameter affecting quality; tradeoff names competing effects. All runtime evidence is absent. Existing validation-plan experiments are planned work, not executed results.
+Risk means a decision or absence of one may cause a quality attribute to go unmet. A non-risk is a sound, well-justified decision requiring no architectural change in its explicitly bounded scope; it is not a passed test. A sensitivity point is a decision with high leverage over one named quality attribute. A tradeoff point is the same decision sensitive for at least two named quality attributes with opposite directional effects. All runtime evidence is absent. Existing validation-plan experiments are planned work, not executed results.
 
 ## Step 2: Present business drivers and participants
 
@@ -54,6 +54,19 @@ Reviewed inputs: [drivers](../architectural-drivers.md), [architecture](../desig
 
 A1 timing/load/dimensions; A2 accepted change/outage/delivery deadline; A3 CMS receipt/deduplication/order; A4 SLA accounting/RTO/RPO; A5 query mix/peaks; A6 monetary/rule policy; A7 identity scopes/revocation; A8 telemetry scope/exact timing/retention; A9 resources/MVP; A10 legacy transfer/rollback; A11 test fidelity; A12 activation consistency and unrecoverable target; A13 cursor/replay retention. These are not approvals. No new procurement, infrastructure or implementation activity is undertaken by this evaluation.
 
-### Preparation review record
 
-On 2026-10-19 the independent architecture designer reviewed this preparation and confirmed its baseline presentation, D1..D14 mapping and A1..A13 treatment. The designer explicitly reaffirmed that the 90 ms budget is unmeasured, acceptance-at-commit is provisional, CMS receiver semantics are indispensable, exact post-commit timing can remain unknown, and an unrecoverable immutable activation remains Blocked. The evaluator retained these as risks. Phase 2 stakeholders receive the same preparation and Phase 1 recap before voting; their review/ballot record is maintained by the facilitator.
+## Current method baseline and classifications
+
+Final verified evaluation skill SHA-256: `C03C18BC12F0D5AC013D8134723B83538544AD1769B021A097A80ED4583B10D7`; template: `7C627C231D3FD4F845C9ED1BFB55CD7D3036FC865566FBEF17FE41D3941EF960`. Initial and final utility trees include Sum. Every scenario receives Architectural Approach Analysis and a Trade-Off Map. Primary Attribute exactly matches its tree branch; Related quality effects reference the existing QA IDs; functional invariants and delivery constraints are separately labeled. No unnamed quality attribute is added.
+
+A sensitivity is a decision with high leverage over one named quality attribute. A formal tradeoff is a shared decision sensitive for at least two named quality attributes with opposite directional effects. A cost, effort, simplicity or invariant concern alone is not a formal tradeoff in this evaluation. A non-risk is a sound justified decision needing no architectural change within its stated scope, not a blanket claim for every untested tactic. Structural causal evidence supports classifications; no effect size or target compliance is measured. A/B options explain consequences and do not authorize replacing the baseline or weakening requirements.
+
+Fresh stakeholder proposals, review and public votes must be collected in this run; archived votes are not reused as current ballots. The current designer review and fresh stakeholder classification review are recorded in participation.md. The three formal tradeoffs are bounded by structural evidence; all five roles accepted the current primary classifications and scores on 2026-10-24.
+
+## Current execution record
+
+Steps 1-3 reused the frozen ADD documents; Step 4 recorded ten architectural approaches and reproduced the exact ADD container diagram. Steps 5-6 analyzed all nine initial scenarios with Sum and revised classifications. Five independent roles freshly reviewed ten candidates and cast 25 new public votes; Step 7 selected S-02/03/04/05/06 by the prescribed ranking. Step 8 analyzed all ten candidates, including unselected cases, and revalidated the nine initial scenarios. Step 9 presents risks, scoped non-risks, sensitivities, three formal tradeoffs, owner/evidence gates and conditional suitability/buildability conclusions in result.md. The facilitator records closing presentation in participation.md. Previous evaluation remains archived; no historical vote is presented as current.
+
+### Final method-file recheck
+
+The evaluator reread the complete current SKILL.md after final verification found a hash difference. Earlier read provenance was `362554731E83B2E70B5F18000E3DB31424822A9D036564634B989CF93FD60B8C`; the final verified current hash is `C03C18BC12F0D5AC013D8134723B83538544AD1769B021A097A80ED4583B10D7`. The current Trade-Off Map example names conflicting attributes rather than the earlier simplicity/cost examples. The report already uses named opposing quality attributes with direction and reason, and marks unestablished cases explicitly. All current requirements were checked: separate reviewed preparation; approach inventory; initial/final trees with Sum and 0..100-by-ten scores; all scenarios analyzed with per-scenario decision tables and maps; fresh public ballots, numeric tie order and five new leaves; structural evidence; and final presentation of risks, non-risks, sensitivities and tradeoffs. No analytical change was required. Template hash is unchanged. All five stakeholder closing reviews and the designer review accepted the report without material correction, as recorded by the facilitator.

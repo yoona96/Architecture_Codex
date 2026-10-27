@@ -1,77 +1,84 @@
-# HPS ATAM Participation and Ballot Record
+# HPS ATAM Participation Record
 
-Sessions began 2026-10-18, resumed 2026-10-19, and completed closing review on 2026-10-20, Asia/Seoul. This is an agent-simulated evaluation. No actual hotel employee, CMS supplier or authority approved a requirement, score, design or release. The facilitator, evaluator and designer do not vote. Five distinct stakeholder agents independently proposed two scenarios each, then reviewed the same [candidate pool](scenario-pool.md), [preparation](preparation.md) and Phase 1 [analysis](result.md) before voting. Work was scheduled within the four-active-agent limit; written exchanges preserve role independence.
+Fresh rerun: 2026-10-23 through 2026-10-24, Asia/Seoul. This record replaces the current participation record; the previous run remains in [history](history/2026-10-20/participation.md). All participants are simulated agents. This is not actual stakeholder approval, acceptance of proposed targets, or executed test evidence. Only ATAM artifacts were revised; ADD and requirements remain frozen.
 
-## Participants and baseline review
+## Participants and preparation
 
-| ID | Role / agent | Main responsibility |
+| Participant | Role and work in this rerun |
+|---|---|
+| Root facilitator | Coordinated reviews, published concerns, recorded ballots and verified aggregation; no vote |
+| Architecture designer | Rechecked the unchanged ADD baseline and challenged causal quality classifications; no vote |
+| Architecture evaluator | Prepared Steps 1-3, identified approaches, scored initial scenarios, analyzed every scenario and consolidated findings; no vote |
+| SH1 Revenue/pricing product owner | Pricing correctness and exceptional policy activation recovery |
+| SH2 CMS/integration owner | Receipt ambiguity, receiver contract and legacy authority fencing |
+| SH3 SRE/operations | Shared database capacity, query continuity and storage/recovery pressure |
+| SH4 Security/identity owner | Current hotel authorization, key trust and safe recovery authority |
+| SH5 Engineering/QA delivery lead | Protocol extension, faithful independent tests and feasible release/rollback |
+
+The five stakeholder roles satisfy the user limit of five. Facilitator, designer and evaluator are evaluation roles and do not cast stakeholder votes. Sessions used existing role agents, with bounded simultaneous work.
+
+On 2026-10-23 the designer reviewed D1-D14 and residual assumptions. The evaluator prepared the method and baseline in [preparation.md](preparation.md). Each stakeholder reread the baseline, reviewed the changed method and retained two candidates with clarified primary attributes. On 2026-10-24 all five reviewed the consolidated ten-candidate pool and Phase 1 analysis before casting fresh ballots. Stable scenario IDs preserve provenance, but historical ballots were not reused.
+
+## Preparation and Phase 1 review
+
+The designer distinguished functional price integrity from a named quality attribute, ordered-delivery head-of-line delay from a separate quality tradeoff, and administrative activation blockage from query unavailability. Ports improving both modifiability and testability are not opposing effects. Shared database resource competition alone does not establish a cross-attribute tradeoff. Current grant caching alone does not preserve queries when the same primary database is unavailable.
+
+The evaluator therefore retained three formal tradeoffs: synchronous replication (QA-2 versus QA-1), durable unsampled publication evidence (QA-8 versus QA-1), and bounded known-key trust (QA-3 versus QA-5). Both key-trust options reject unknown keys and preserve token/session expiry. Four non-risks are bounded architectural responsibilities, not claims that implementation passed tests. All five stakeholder ballot reviews accepted these classifications and requested no initial score changes.
+
+Initial I/D scores confirmed in this run: QA-1 100/90; QA-2 100/100; QA-3 100/80; QA-4 90/80; QA-5 100/70; QA-6 60/50; QA-7 60/50; QA-8 80/90; QA-9 70/60. These remain evaluator judgments, not measured outcomes or actual business priorities approved by humans.
+
+## Phase 2 recap and consolidation
+
+The Phase 2 recap reused Steps 1-6: method, drivers, architecture, approaches, initial utility tree and findings. [Scenario pool](scenario-pool.md) contains the ten newly reviewed use-case, growth and exploratory candidates with stimulus, environment, response and measures. Each has one primary attribute; related effects use existing QA IDs and are not extra utility-tree branches.
+
+No exact duplicates were found, and all five roles confirmed retaining ten candidates. S-01 routine stale-preview/replay behavior differs from S-02 exceptional blocked activation. S-03 CMS receipt ambiguity differs from S-06 combined storage/telemetry/failover stress. S-04 receiver authority generations differ from S-10 artifact/schema and business rollback feasibility. New workload and recovery numbers remain hypothetical test proposals.
+
+## Public fresh ballots - 2026-10-24
+
+Each role cast five distinct votes, at most one per candidate. Blank influence from evaluator/designer is not counted. Ranking uses descending totals, then ascending numeric scenario ID.
+
+| Candidate | SH1 | SH2 | SH3 | SH4 | SH5 | Total |
+|---|---:|---:|---:|---:|---:|---:|
+| S-01 | 0 | 0 | 0 | 0 | 0 | 0 |
+| S-02 | 1 | 1 | 1 | 1 | 0 | 4 |
+| S-03 | 1 | 1 | 1 | 0 | 1 | 4 |
+| S-04 | 1 | 1 | 0 | 1 | 1 | 4 |
+| S-05 | 1 | 1 | 1 | 0 | 1 | 4 |
+| S-06 | 1 | 1 | 1 | 0 | 0 | 3 |
+| S-07 | 0 | 0 | 0 | 1 | 0 | 1 |
+| S-08 | 0 | 0 | 1 | 1 | 0 | 2 |
+| S-09 | 0 | 0 | 0 | 1 | 1 | 2 |
+| S-10 | 0 | 0 | 0 | 0 | 1 | 1 |
+| Total | 5 | 5 | 5 | 5 | 5 | 25 |
+
+Public ranking: S-02, S-03, S-04, S-05, S-06, S-08, S-09, S-07, S-10, S-01. The first five become new leaves; the initial nine remain, making fourteen final leaves. All ten candidates are analyzed regardless of votes, including zero-vote S-01.
+
+### Ballot rationale and exchanges
+
+| Role | Fresh choices | Rationale and response to other roles |
 |---|---|---|
-| SH1 | Revenue/pricing product owner / stakeholder_revenue | Price correctness, financial continuity and recoverable policy changes |
-| SH2 | CMS/integration owner / stakeholder_integration | Durable receipts, ordering, partner contracts and legacy authority transition |
-| SH3 | SRE/operations lead / stakeholder_operations | Availability, capacity, storage, backlog and recovery |
-| SH4 | Security/identity lead / stakeholder_security | Hotel authorization, revocation, key trust and recovery privileges |
-| SH5 | Engineering/QA delivery lead / stakeholder_engineering | Protocol boundaries, credible tests, release safety and buildability |
+| SH1 | S-02, S-03, S-04, S-05, S-06 | Exceptional policy recovery and end-to-end/legacy integrity remain critical. Broad storage/failover impact moves S-06 ahead of routine S-01 compared with the archived ballot. Supports SH3 storage concern; retention/admission must be agreed with SH2 without deleting pending CMS evidence or live history |
+| SH2 | S-02, S-03, S-04, S-05, S-06 | Receiver ambiguity and authority fencing require explicit contracts. Shared capacity and CMS drain move S-05 ahead of S-07 compared with the archived ballot. Query protection must not starve delivery; S-07 still needs analysis despite not receiving this role's vote |
+| SH3 | S-02, S-03, S-05, S-06, S-08 | Permanent blockage, CMS backlog, hotel skew and compound storage failure create operational risk. Supports SH1/SH2 capacity concerns but independently retains S-08 because IdP/key failure can interrupt queries even when the DB is healthy; S-04 remains a cutover gate |
+| SH4 | S-02, S-04, S-07, S-08, S-09 | Recovery authority, obsolete producers, revoked scopes, trust-window policy and protocol security parity matter. Supports SH3's independent IdP path and SH1/SH2 integrity concerns while retaining role-specific S-07/09. Current replay authorization is already required; uncertainty is policy/implementation evidence, not an intended bypass |
+| SH5 | S-03, S-04, S-05, S-09, S-10 | Faithful CMS fixtures, delayed legacy traffic, mixed-load experiments, unchanged-core protocol extension and separate binary/business rollback expose feasibility. Supports SH3's S-08 concern even without a vote; tests must distinguish cached-key trust from token expiry and preserve authorization |
 
-The designer confirmed the preparation presentation and D1-D14/A1-A13 mapping on 2026-10-19. Clarifications: (1) hotel lock queueing invalidates any inference that a 90 ms allocation guarantees the target; (2) sender-only logic cannot prove CMS receipt; (3) immutable activation can remain Blocked without A12 resolution; (4) durable IDs do not prove exact commit timing; (5) primary failover and shared CPU/I/O/WAL/storage remain availability/capacity dependencies. Current authorization is required before returning an idempotency receipt; receipt precedence only overrides stale version checks. Maximum cached-key trust/emergency revocation, late legacy producer fencing and post-retention command replay semantics remain unspecified.
+SH2's worker-concurrency concern can become a QA-2/QA-4 tradeoff only with explicit saturation and recovery assumptions. It is not added to the formal register without that causal evidence. SH3 likewise declined to label query/worker throughput allocation a formal cross-quality tradeoff. No role requested a new unnamed quality branch.
 
-## Consolidation and cross-role exchanges
+## Step 8 and closing presentation
 
-All five roles reviewed and accepted the ten-candidate pool without merging. They distinguished S-04 receiver authority fencing from S-10 artifact/schema/business rollback and schedule feasibility. SH3 distinguished S-05 growth contention from S-06 storage/failover recovery. SH4 distinguished S-07 local grants, S-08 external identity trust and S-09 new-entry-point parity.
+The evaluator analyzes all nine initial scenarios and all ten candidate scenarios, with one architectural decision table and Trade-Off Map per scenario, and explicitly revalidates the initial nine against Phase 2 challenges. [Result](result.md) contains the ranked vote table, final fourteen-leaf tree, evidence limits, twelve risks, ten sensitivity entries, three formal tradeoffs and four scoped non-risks. The evaluation assesses quality suitability as conditional and buildability as undetermined until policies, contracts, resource estimates and planned experiments are resolved.
 
-| Role | Response to another stakeholder |
+All five closing reviews and the designer consistency review were received on 2026-10-24. They acknowledge presentation and preservation of concerns; they do not approve the architecture for implementation or production.
+
+
+| Closing reviewer | Confirmation and remaining boundary |
 |---|---|
-| SH1 | Supports SH2's receiver fencing: routing/sender locks cannot retract old network requests. Supports SH3 query protection but rejects indefinite starvation of recalculation/CMS convergence. |
-| SH2 | Supports SH5's distinction between binary and authority rollback; adds late legacy request fencing. Supports SH3 retaining pending CMS records under storage pressure, with jointly agreed admission/drain limits. |
-| SH3 | Recognizes SH1 correctness priority but selects storage/identity compound failures over routine S-01; nonselected cutover/release risks still require analysis. |
-| SH4 | Supports SH2 replay-scope concern while accepting designer clarification that authorization is already required. Supports SH1 recovery but requires bounded privileged compensation and audit. |
-| SH5 | Supports SH2 receipt evidence as part of QA-2. Raising QA-8 importance concerns broader measurement completeness and does not prove delivery or double-count the same risk. |
+| SH1 | Fresh S-02..06 ballot and changed S-06 priority accurately preserved; pricing recovery and unselected S-01 retained. No material correction |
+| SH2 | CMS contract, authority fencing, replay retention and delivery starvation concerns preserved; worker competition remains conditional. No material correction |
+| SH3 | Shared DB, hotel locks, storage recovery, CMS backlog and unselected IdP failure path retained. Proposed operational numbers remain unapproved. No material correction |
+| SH4 | Fresh S-02/04/07/08/09 ballot accurate; unselected security scenarios retained; current replay authorization distinguished from unresolved trust policy. Unknown keys rejected and token/session expiry unchanged. No material correction |
+| SH5 | Fresh S-03/04/05/09/10 ballot accurate; unselected protocol/release scenarios retain parity, test fidelity, schema/business rollback and capacity gates. No material correction |
+| Architecture designer | All nineteen analyses/maps and fourteen primary-matched leaves consistent with unchanged ADD. Three opposing-QA tradeoffs and four bounded non-risks supported. Durable evidence does not resolve exact timing. No material correction |
 
-## Public ballots
-
-Each entry represents one vote. Every role used five distinct choices, within the up-to-five limit. IDs in each row are sorted for readability; there is no within-ballot preference weight.
-
-| Stakeholder | S-01 | S-02 | S-03 | S-04 | S-05 | S-06 | S-07 | S-08 | S-09 | S-10 | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| SH1 | 1 | 1 | 1 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 5 |
-| SH2 | 0 | 1 | 1 | 1 | 0 | 1 | 1 | 0 | 0 | 0 | 5 |
-| SH3 | 0 | 1 | 1 | 0 | 1 | 1 | 0 | 1 | 0 | 0 | 5 |
-| SH4 | 0 | 1 | 0 | 1 | 0 | 0 | 1 | 1 | 1 | 0 | 5 |
-| SH5 | 0 | 0 | 1 | 1 | 1 | 0 | 0 | 0 | 1 | 1 | 5 |
-| Total | 1 | 4 | 4 | 4 | 3 | 2 | 2 | 2 | 2 | 1 | 25 |
-
-| Role | Reasons for its choices |
-|---|---|
-| SH1 | S-01 confirmed versus sold price; S-02 unblock revenue policy; S-03 correct channel prices; S-04 protect launch-time price authority; S-05 preserve peak revenue opportunity. |
-| SH2 | S-03 durable receiver guarantees; S-04 legacy fencing; S-02 converge already-delivered partial policy; S-06 preserve receipt/replay evidence; S-07 protect replay disclosure. |
-| SH3 | S-05 actual shared resource limits; S-06 avoid repeated outage during recovery; S-02 restore blocked hotel operations; S-03 drain backlog faster than arrivals; S-08 bound identity retry cascades. |
-| SH4 | S-07 comprehensive revocation paths; S-08 missing trust/compromise policy; S-09 secure new adapter parity; S-02 privileged compensation scope; S-04 receiver authority validation. |
-| SH5 | S-09 unchanged core/test fidelity; S-10 release/rollback/capacity; S-04 distinguish binary rollback from authority; S-03 realistic failure fixtures; S-05 expose redesign before schedule commitments. |
-
-Computed rank is S-02, S-03, S-04, S-05, S-06, S-07, S-08, S-09, S-01, S-10. The first five are promoted as new utility-tree leaves. S-06 wins the four-way two-vote tie by numeric ID, not by inferred severity. All ten remain analyzed. Low votes do not accept a risk, remove a requirement or prove a design.
-
-## Score review record
-
-Phase 1 scores were shared before voting: QA-1 100/90, QA-2 100/100, QA-3 100/80, QA-4 90/80, QA-5 100/60, QA-6 60/50, QA-7 60/50, QA-8 70/90, QA-9 70/60 (Importance/Difficulty).
-
-| Proposal | Role positions | Evaluator response |
-|---|---|---|
-| QA-8 Importance 70 -> 80 | SH1 proposed for revenue reconciliation; SH3, SH4 and SH5 supported for incident/recovery evidence. SH2 accepted original70 provided receipt evidence remains core QA-2. | Accepted for final prioritization, Difficulty90 retained; original score/history preserved. No requirement scope change or receipt guarantee inferred. |
-| QA-5 Difficulty 60 -> 70 | SH4 proposed because emergency key/session trust and in-flight policy are unresolved; other roles did not propose a change. | Accepted for final prioritization; Importance100 retained. This is evaluator judgement informed by role feedback, not a vote result or measured effort. |
-
-All stakeholders explicitly retained hypothetical numeric stress/recovery proposals as unapproved. Initial high-level driver priorities remain unchanged. Importance/difficulty sum does not determine the top-five selection.
-
-## Presentation of results
-
-The final report, ranked pool and ballot record were returned to all five roles for closing review on 2026-10-20. Every role confirmed its votes and concerns were represented and requested no material correction. These responses confirm faithful documentation only; they do not constitute actual business approval, a new vote or runtime evidence.
-
-| Role | Closing response |
-|---|---|
-| SH1 | Confirmed S-01..05 ballot and QA-8 score proposal; pricing correctness, activation compensation, CMS convergence and legacy fencing remain. Nonselected S-01 retains analysis; T10 preserves the concern about worker starvation. |
-| SH2 | Confirmed S-02/03/04/06/07 and tie rules; receiver guarantees, producer epochs and replay expiry remain in S-03/S-04/RT2. Receipt evidence remains QA-2 even after QA-8 score change. Actual contracts/rehearsals still needed. |
-| SH3 | Confirmed S-02/03/05/06/08, shared resource/storage/failover findings and QA-8 score change. S-06 selection by ID does not imply greater severity than S-08; operational targets remain unapproved until service selection/testing. |
-| SH4 | Confirmed S-02/04/07/08/09, QA-5 Difficulty70 and QA-8 Importance80. Nonselected security/protocol scenarios retain analysis; replay authorization is existing policy, while key trust, in-flight boundaries and limited recovery privileges remain open. |
-| SH5 | Confirmed S-03/04/05/09/10 and distinction between ballot ranking and analytical scores. Nonselected protocol/release cases retain gates for test fidelity, binary versus authority rollback and staffing. Buildability remains undetermined. |
-
-## Documentation verification
-
-The facilitator independently recalculated all 25 votes and the numeric-ID tie order; checked 14 final utility-tree leaves and their score increments/sums; confirmed analyses for all nine original and ten new scenarios; checked local Markdown links and balanced fenced blocks; and matched all ten frozen baseline hashes. No requirement or ADD artifact was changed. These are documentation checks, not implementation tests.
+The facilitator checked arithmetic, per-role vote limits, tie ordering, primary-attribute consistency, local links and code fences. The evaluator and facilitator checked the ten requirement/ADD baseline hashes. No runtime quality tests were performed. The earlier method hash was discovered to differ from the current skill during final verification; the final preparation record identifies the current method version after rechecking its requirements. The previous evaluation remains separately archived.

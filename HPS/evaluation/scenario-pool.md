@@ -1,25 +1,31 @@
 # HPS ATAM Stakeholder Scenario Pool
 
-Collected 2026-10-18 to 2026-10-19, Asia/Seoul. Ten proposals from five independent simulated stakeholder agents. These are not interviews with actual employees or approved new requirements. The facilitator normalized English wording and assigned numeric IDs before voting. Original proposal identifiers retain provenance. Existing QA numbers retain their original meaning. New time/load values below are hypothetical test proposals pending owner agreement.
+Freshly reviewed and revised on 2026-10-23, Asia/Seoul, under the changed evaluation skill. All five independent simulated stakeholder agents reread the ADD baseline and retained their two historical candidates with explicit quality classifications. Stable IDs permit comparison; this does not reuse historical votes. This run's ballots are recorded separately in participation.md. These are not interviews with actual employees or approved new requirements. New time/load values below are hypothetical test proposals pending owner agreement.
 
 ## Consolidation and voting rules
 
-No exact duplicates were found. S-04 and S-10 both cover cutover but remain separate: S-04 tests receiver fencing of delayed legacy requests across authority generations; S-10 tests artifact/schema rollback and delivery feasibility. S-01 and S-02 distinguish routine stale-preview correctness from permanently blocked activation recovery. S-03 and S-06 distinguish CMS receipt recovery from storage/telemetry/failover interaction. Stakeholders may challenge this consolidation before casting ballots.
+No exact duplicates were found. S-04 and S-10 both cover cutover but remain separate: S-04 tests receiver fencing of delayed legacy requests across authority generations; S-10 tests artifact/schema rollback and delivery feasibility. S-01 and S-02 distinguish routine stale-preview correctness from permanently blocked activation recovery. S-03 and S-06 distinguish CMS receipt recovery from storage/telemetry/failover interaction. All five stakeholder roles confirmed this consolidation before their fresh 2026-10-24 ballots; see [participation](participation.md).
 
 Each SH1-SH5 casts up to five distinct votes, one per scenario. Rank by total votes descending, then numeric ID ascending. Top five become new utility-tree leaves; all candidates are analyzed. Numeric importance/difficulty sums do not override votes. Initial QA-1..9 remain in the tree. Facilitator, designer and evaluator do not vote.
 
-| ID | Origin | Type | Title | Attributes |
-|---|---|---|---|---|
-| S-01 | SH1-U | Use case | Confirm pricing after policy changes and replay a lost response | QA-1/2; correctness |
-| S-02 | SH1-E | Exploratory/growth | Recover an irreparable policy activation at portfolio scale | QA-2/3/8; correctness |
-| S-03 | SH2-S1 | Use case | Recover lost CMS receipts with duplicate and late requests | QA-2/8 |
-| S-04 | SH2-S2 | Exploratory | Fence delayed legacy requests during cutover and rollback | QA-2/3/8 |
-| S-05 | SH3-1 | Growth | Sustain query growth with concentrated hotel mutations | QA-1/3/4/8 |
-| S-06 | SH3-2 | Exploratory | Recover database failure during telemetry/storage pressure | QA-2/3/8 |
-| S-07 | SH4-1 | Use case | Enforce revoked hotel scope across cursors and replays | QA-5/8 |
-| S-08 | SH4-2 | Exploratory | Handle identity key rotation during provider outage | QA-3/5/8/9 |
-| S-09 | SH5-1 | Growth | Extend query protocol with trustworthy independent tests | QA-5/6/9 |
-| S-10 | SH5-2 | Use case/exploratory | Deliver and roll back a release after accepted writes | QA-2/7/9; CON-4 |
+| ID | Origin | Type | Title | Primary attribute | Related quality effects, not additional primary branches |
+|---|---|---|---|---|---|
+| S-01 | SH1-U | Use case | Confirm pricing after policy changes and replay a lost response | Reliability, QA-2 | QA-1 publication timing; monetary correctness is HPS-2/4/5 |
+| S-02 | SH1-E | Exploratory/growth | Recover an irreparable policy activation at portfolio scale | Reliability, QA-2 | QA-8 progress; QA-3 only if price queries are interrupted |
+| S-03 | SH2-S1 | Use case | Recover lost CMS receipts with duplicate and late requests | Reliability, QA-2 | QA-8 receipt evidence; order/deduplication are response invariants |
+| S-04 | SH2-S2 | Exploratory | Fence delayed legacy requests during cutover and rollback | Reliability, QA-2 | QA-8 reconciliation; QA-3 only for actual query interruption |
+| S-05 | SH3-1 | Growth | Sustain query growth with concentrated hotel mutations | Scalability, QA-4 | QA-1 normal publication timing; QA-3 query success; QA-8 observations |
+| S-06 | SH3-2 | Exploratory | Recover database failure during telemetry/storage pressure | Availability, QA-3 | QA-2 committed records; QA-8 measurement accounting |
+| S-07 | SH4-1 | Use case | Enforce revoked hotel scope across cursors and replays | Security, QA-5 | QA-1 grant lookup overhead; audit supports evidence, not expanded QA-8 |
+| S-08 | SH4-2 | Exploratory | Handle identity key rotation during provider outage | Security, QA-5 | QA-3 authorized query availability under key-cache policy |
+| S-09 | SH5-1 | Growth | Extend query protocol with trustworthy independent tests | Modifiability, QA-6 | QA-9 independent testing; QA-5 security parity |
+| S-10 | SH5-2 | Exploratory | Deliver and roll back a release after accepted writes | Deployability, QA-7 | QA-2 publication preservation; QA-9 rehearsal fidelity; CON-4 is a constraint |
+
+These primary labels are the required utility-tree and Step 6/8 Attribute(s) labels. Correctness, complete PriceSets, single-writer authority and monetary policy are functional invariants, not silently introduced quality branches. A blocked management operation or write freeze does not by itself violate QA-3, which measures price-query uptime. Additional failure/recovery criteria refine this evaluation's scenarios and remain proposals where not present in the original requirements.
+
+## Fresh role review of the stricter tradeoff definition
+
+SH1 identified atomic price/task/receipt writes as reliability protection with potential publication latency cost. SH2 cautioned that ordered delivery versus head-of-line delay is not automatically two different attributes; increasing worker resources may affect QA-2 recovery and QA-4 query latency only under explicit saturation/recovery assumptions. SH3 separated competing performance workloads from formal cross-attribute tradeoffs and identified synchronous replication and durable telemetry write costs. SH4 defined a bounded known-key trust-window comparison: shorter trust favors QA-5 compromise response but can reduce QA-3 during IdP outage; unknown keys and expired tokens remain rejected under either option. SH5 found no opposing-QA tradeoff merely from ports, test maintenance, schema complexity or deadlines. The evaluator determines formal classification from the actual baseline and states unsupported cases as None or conditional candidates.
 
 ## S-01: Confirm pricing after policy changes and replay a lost response
 
@@ -35,7 +41,7 @@ Each SH1-SH5 casts up to five distinct votes, one per scenario. Rank by total vo
 - Environment/artifact: proposed 300 hotels x 365 future dates with concurrent queries/changes; ConfigurationActivation, tasks, pointer, PriceSets, blocked recovery and CMS.
 - Response: expose affected dates/versions and local versus CMS progress; never claim incomplete work complete; preserve latest base/fixed edits; use an approved compensating/replacement transition to converge to correct prices.
 - Measure: zero false completion, invalid sets or overwritten latest edits; all affected dates traceable. Proposed alarm <=60 seconds and full local/CMS convergence <=30 minutes after compensation approval are hypothetical, not accepted requirements.
-- Evidence/concern: HPS-2/3/4/5; QA-2/3/8; D3/4/6/13/14; A2/3/6/8/12. Current immutable target can remain Blocked indefinitely and prevents another activation. A12 has no approved exceptional recovery path. Unbounded atomic recalculation would create other performance/availability risks.
+- Evidence/concern: HPS-2/3/4/5; primary QA-2, related QA-8; D3/4/6/13/14; A2/3/6/8/12. Current immutable target can remain Blocked indefinitely and prevents another activation. This is not itself a QA-3 query outage. A12 has no approved exceptional recovery path. Unbounded atomic recalculation could create performance/availability risks and requires separate evidence.
 
 ## S-03: Recover lost CMS receipts with duplicate and late requests
 
@@ -74,16 +80,16 @@ Each SH1-SH5 casts up to five distinct votes, one per scenario. Rank by total vo
 - Source/stimulus: revoked human or machine account reuses session, token, cursor, publication ID and idempotency key and substitutes another hotel ID after revocation commits.
 - Environment/artifact: multiple API replicas, some requests authorized before revocation; entitlement store, query/pricing ports, replay and pagination.
 - Response: every authorization after revocation uses current grants; deny forbidden scope without replay disclosure. Already-authorized in-flight requests follow A7 and remain auditable by authorization revision.
-- Measure: zero unauthorized exposure/change after a post-revocation check; zero bypass paths; atomic entitlement revision/audit. Proposed 1,000 attempts per path/replica combination is a test scale, not a new requirement.
-- Evidence/concern: HPS-1/2/3/6; QA-5/8; D2/5; A7. Replaying a receipt before version checks must not bypass authorization. A stricter no-commit-after-revocation policy would require changed design.
+- Measure: zero unauthorized exposure/change after a post-revocation check; zero bypass paths; atomic entitlement revision/audit. This run does not prescribe a new attempt-count threshold.
+- Evidence/concern: HPS-1/2/3/6; primary QA-5; D2/5; A7. Audit is supporting evidence, not a new QA-8 obligation. Replaying a receipt before version checks must not bypass authorization. A stricter no-commit-after-revocation policy would require changed design.
 
 ## S-08: Handle identity key rotation during provider outage
 
 - Source/stimulus: IdP/JWKS is unavailable during signing-key rotation; calls use both cached valid keys and unknown key IDs.
 - Environment/artifact: normal queries with a hypothetical 15-minute outage; identity adapter, key cache, sessions, query pools and auth telemetry.
 - Response: fail closed for unverified identity; process valid existing sessions/tokens only within approved trust/expiry and current grants; bound refresh/retries to protect query resources; count actual query failures in availability.
-- Measure: zero unverified access, zero expiry bypass. Proposed alert <=60 seconds and new valid-key recovery <=5 minutes after provider recovery are hypothetical; maximum key/session trust remains open.
-- Evidence/concern: HPS-1/3; QA-3/5/8/9; CON-2; D2/8/9; A4/7. Long cache trust aids availability but delays compromised-key revocation. Emergency invalidation policy is unspecified.
+- Measure: zero unverified access, zero expiry bypass. Maximum key/session trust and emergency invalidation remain open. This run does not prescribe a new alert/recovery time; 15-minute outage remains a hypothetical test environment.
+- Evidence/concern: HPS-1/3; primary QA-5, related QA-3; CON-2; D2/8/9; A4/7. Longer trust in previously verified keys can aid query availability but prolong compromised-key exposure. Both shorter and longer bounded policies reject unknown keys and never extend token expiry. Monitoring/testing are supporting means, not additional primary attributes.
 
 ## S-09: Extend query protocol with trustworthy independent tests
 
